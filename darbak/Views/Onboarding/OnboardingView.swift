@@ -11,19 +11,32 @@ import Lottie
 struct Onboarding: View {
     @EnvironmentObject var user: User
 
-    @State private var isPlaying: Bool = false
 
-    var body: some View {
-        VStack {
-            LottieView(animation: .named("walking"))
-                .playbackMode(isPlaying ? .playing(.fromProgress(0, toProgress: 1, loopMode: .loop)) : .paused)
-                .frame(width: 200, height: 200)
+        var body: some View {
+        VStack(alignment: .center, spacing: 0) {
+            Image("onboardingPicture")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 630, height: 630)
             
-            Button(isPlaying ? "Pause" : "Play") {
-                isPlaying.toggle()
-            }
-            .buttonStyle(.bordered)
+            Text("المشي صار فعالية")
+                .padding(.top, 30)
+                .font(.system(size: 35, weight: .bold))
+                .foregroundColor(Color(hex: "#1B5299"))
+            Spacer()
+                
         }
-        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea(.all, edges: .top)
+            
     }
+    
 }
+
+
+#Preview {
+    Onboarding()
+    
+}
+
+
