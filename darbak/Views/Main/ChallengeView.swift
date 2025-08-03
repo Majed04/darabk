@@ -10,7 +10,7 @@ import SwiftUI
 struct Challenge: View {
     var body: some View {
         VStack {
-            Text("This is a challenge page")
+            Text("This is a challenge view")
         }.padding()
     }
 }
