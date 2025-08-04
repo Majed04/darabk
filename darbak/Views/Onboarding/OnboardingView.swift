@@ -13,22 +13,21 @@ struct Onboarding: View {
     @State private var navigateToChallenge = false
     
     var body: some View {
-        VStack(alignment: .center, spacing: 0) {
+        VStack {
             // Main Image
             Image("onboardingPicture")
                 .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 630, height: 630)
+                .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height * 0.75)
                 .clipShape(
                     .rect(
-                        bottomLeadingRadius: 180,
-                        bottomTrailingRadius: 180
+                        bottomLeadingRadius: 80,
+                        bottomTrailingRadius: 80
                     )
                 )
                 .overlay(
                     UnevenRoundedRectangle(
-                        bottomLeadingRadius: 180,
-                        bottomTrailingRadius: 180
+                        bottomLeadingRadius: 80,
+                        bottomTrailingRadius: 80
                     )
                     .stroke(Color.black, lineWidth: 6)
                 )
@@ -39,14 +38,14 @@ struct Onboarding: View {
                 .font(.system(size: 35, weight: .bold))
                 .foregroundColor(Color(hex: "#1B5299"))
             
-            Spacer()
+            
             
             // Action Button
             CustomButton(title: "عرفنا عليك") {
                 navigateToChallenge = false
             }
             .padding(.horizontal, 24)
-            .padding(.top, 50)
+            .padding(.top, 30)
             .padding(.bottom, 50)
         }
         .fontDesign(.rounded)
@@ -58,9 +57,6 @@ struct Onboarding: View {
             )
         )
         .ignoresSafeArea(.all, edges: .top)
-        .navigationDestination(isPresented: $navigateToChallenge) {
-            Challenge()
-        }
     }
 }
 

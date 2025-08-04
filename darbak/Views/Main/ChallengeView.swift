@@ -13,14 +13,15 @@ struct Challenge: Identifiable {
     let prompt: String
 }
 struct ChallengePage: View {
+    
     let challenges: [Challenge] = [
         Challenge(imageName: "StopSign", prompt: "4 علامات قف"),
         Challenge(imageName: "Car", prompt: "4 سيارات"),
-        Challenge(imageName: "Bus", prompt: "3 باصات")
-        ]
-        
+        Challenge(imageName: "Bus", prompt: "3 باصات"),
+    ]
+
     @State private var currentIndex = 0
-        
+
     var body: some View {
         VStack(spacing: 20) {
             Text("تحدي اليوم")
@@ -33,22 +34,17 @@ struct ChallengePage: View {
                 .bold()
                 .padding(.horizontal)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                
         }
-        
-        
-       
+
         VStack(spacing: 10) {
-      
-         
-            
+
             Image(challenges[currentIndex].imageName)
                 .resizable()
                 .frame(width: 380, height: 430)
                 .cornerRadius(20)
             Button(action: {
                 var newIndex: Int
-                
+
                 repeat {
                     newIndex = Int.random(in: 0..<challenges.count)
                 } while newIndex == currentIndex
@@ -59,29 +55,14 @@ struct ChallengePage: View {
                     Image(systemName: "repeat")
                         .foregroundColor(.blue)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                }
-                
-                }
-            Spacer()
 
-                       // Start Button
-                       Button(action: {
-                           // Add navigation or action here
-                           print("Start walking challenge")
-                       }) {
-                           Text("مشينا")
-                               .font(.headline)
-                               .frame(maxWidth: .infinity)
-                               .padding()
-                               .background(Color.blue)
-                               .foregroundColor(.white)
-                               .cornerRadius(12)
-                       }
-                       .padding(.horizontal)
-                       .padding(.bottom)
-            
-           
+                }
+
+            }
+            Spacer()
+            CustomButton(title: "عرفنا عليك") {
+
+            }
 
         }.padding()
     }
