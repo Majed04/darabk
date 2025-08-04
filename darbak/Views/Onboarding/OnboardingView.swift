@@ -19,7 +19,6 @@ struct Onboarding: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 630, height: 630)
-                .padd
                 .clipShape(
                     .rect(
                         bottomLeadingRadius: 180,
