@@ -13,7 +13,9 @@ struct darbakApp: App {
     
     var body: some Scene {
         WindowGroup {
-            Onboarding()
+            NavigationStack {
+                Onboarding()
+            }
         }.environmentObject(user)
     }
 }
