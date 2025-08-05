@@ -24,22 +24,18 @@ struct ChallengePage: View {
         Challenge(imageName: "Cat", prompt: "3 قطط", emojis: ["🐈", "🐱", "🐈‍⬛", "😸", "🐾"]),
         Challenge(imageName: "Birds", prompt: "4 طيور", emojis: ["🐦", "🐥", "🦜", "🦤", "🕊️", "🪿"])
     ]
+    
     var onBack: (() -> Void)? = nil
     @Environment(\.presentationMode) private var presentationMode
     
-    // Function to create emoji background
     private func createEmojiBackground() -> some View {
         GeometryReader { geometry in
             ForEach(0..<19, id: \.self) { index in
-                let column = index % 3  // 3 columns
-                let row = index / 3     // Multiple rows
+                let column = index % 3
+                let row = index / 3
                 let xOffset = CGFloat(column) * (geometry.size.width / 2.5) + 60
                 let yOffset = CGFloat(row) * (geometry.size.height / 8) + 120
-<<<<<<< HEAD
-               
-=======
                 
->>>>>>> main
                 Text(challenges[currentIndex].emojis[index % challenges[currentIndex].emojis.count])
                     .font(.system(size: 60))
                     .opacity(0.09)
@@ -59,32 +55,17 @@ struct ChallengePage: View {
             ZStack {
                 createEmojiBackground()
                     .ignoresSafeArea()
-<<<<<<< HEAD
-                VStack(spacing: 10) {
+                
+                VStack(alignment: .leading, spacing: 10) {
                     Text("صور \(challenges[currentIndex].prompt) خلال إنجازك هدف اليوم")
                         .font(.title)
                         .bold()
-                        .padding(.horizontal)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-=======
-                VStack(alignment: .leading,spacing: 10) {
-                    Text("صور \(challenges[currentIndex].prompt) خلال إنجازك هدف اليوم")
-                        .font(.title)
-                        .bold()
->>>>>>> main
-                    
                     
                     Image(challenges[currentIndex].imageName)
                         .resizable()
-<<<<<<< HEAD
-                        .frame(width: 380, height: 430)
-                        .cornerRadius(20)
-
-=======
-                        .frame(width: .infinity, height: 430)
+                        .frame(height: 430)
                         .cornerRadius(20)
                     
->>>>>>> main
                     Button(action: {
                         var newIndex: Int
                         repeat {
@@ -99,48 +80,16 @@ struct ChallengePage: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
-<<<<<<< HEAD
-
-
-                    Button(action: {
-                        print("Start walking challenge")
-                    }) {
-                        Text("مشينا")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
+                    
+                    HStack(alignment: .center){
+                        CustomButton(title: "التحدي") {
+                            
+                        }
                     }
-                    .padding(.horizontal)
+                    .frame(maxWidth: .infinity)
                     .padding(.top, 20)
                 }
-                .padding()
-            }
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        if let onBack = onBack {
-                            onBack()
-                        } else {
-                            presentationMode.wrappedValue.dismiss()
-                        }
-                    }) {
-                        Image(systemName: "chevron.backward")
-                    }
-                    // .environment(\.layoutDirection, .leftToRight) // Removed to follow system direction
-                }
-            }
-            .navigationTitle("تحدي اليوم")
-=======
-                    
-                    CustomButton(title: "مشينا"){
-                        
-                    }
-                    
-                }.padding(.horizontal, 20)
+                .padding(.horizontal, 20)
                 .navigationBarBackButtonHidden(true)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {
@@ -153,12 +102,10 @@ struct ChallengePage: View {
                         }) {
                             Image(systemName: "chevron.backward")
                         }
-                        // .environment(\.layoutDirection, .leftToRight) // Removed to follow system direction
                     }
                 }
                 .navigationTitle("تحدي اليوم")
             }
->>>>>>> main
         }
     }
 }
@@ -166,4 +113,3 @@ struct ChallengePage: View {
 #Preview {
     ChallengePage()
 }
-
