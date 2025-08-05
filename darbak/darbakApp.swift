@@ -13,7 +13,13 @@ struct darbakApp: App {
     
     var body: some Scene {
         WindowGroup {
+<<<<<<< HEAD
             Home()
+=======
+            NavigationStack {
+                Onboarding()
+            }
+>>>>>>> main
         }.environmentObject(user)
     }
 }

@@ -1,0 +1,43 @@
+# macOS Finder metadata
+.DS_Store
+
+# Ignore user-specific data anywhere
+**/xcuserdata/
+*.xcuserstate
+
+# Keep project files but ignore user data inside .xcodeproj
+!*.xcodeproj/project.pbxproj
+
+# Keep workspace files but ignore user data inside .xcworkspace
+!*.xcworkspace/contents.xcworkspacedata
+
+# Xcode build folders
+build/
+DerivedData/
+
+# Swift Package Manager
+.swiftpm/
+Packages/
+Package.resolved
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+
+# Xcode scheme user data
+*.xcscheme
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# Other
+*.moved-aside
