@@ -13,7 +13,7 @@ struct darbakApp: App {
     
     var body: some Scene {
         WindowGroup {
-            Onboarding()
+            Home()
         }.environmentObject(user)
     }
 }
