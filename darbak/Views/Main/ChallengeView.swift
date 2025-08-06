@@ -11,79 +11,102 @@ struct Challenge: Identifiable {
     let id = UUID()
     let imageName: String
     let prompt: String
+    let emojis: [String]
 }
+
 struct ChallengePage: View {
-    let challenges: [Challenge] = [
-        Challenge(imageName: "StopSign", prompt: "4 علامات قف"),
-        Challenge(imageName: "Car", prompt: "4 سيارات"),
-        Challenge(imageName: "Bus", prompt: "3 باصات")
-        ]
-        
     @State private var currentIndex = 0
-        
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("تحدي اليوم")
-                .font(.largeTitle)
-                .bold()
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-                .padding(.horizontal)
-            Text("صور \(challenges[currentIndex].prompt) خلال إنجازك هدف اليوم")
-                .font(.title)
-                .bold()
-                .padding(.horizontal)
-                .frame(maxWidth: .infinity, alignment: .leading)
+    
+    let challenges: [Challenge] = [
+        Challenge(imageName: "StopSign", prompt: "4 علامات مرورية", emojis: ["🛑", "🚦", "⚠️", "🚸", "📍", "🛤️"]),
+        Challenge(imageName: "Car", prompt: "4 سيارات", emojis: ["🚌", "🚍", "🚐", "🚎", "🚗", "🚕"]),
+        Challenge(imageName: "Bus", prompt: "3 باصات", emojis: ["🚌", "🚍", "🚐", "🚎", "🚗", "🚕"]),
+        Challenge(imageName: "Cat", prompt: "3 قطط", emojis: ["🐈", "🐱", "🐈‍⬛", "😸", "🐾"]),
+        Challenge(imageName: "Birds", prompt: "4 طيور", emojis: ["🐦", "🐥", "🦜", "🦤", "🕊️", "🪿"])
+    ]
+    
+    var onBack: (() -> Void)? = nil
+    @Environment(\.presentationMode) private var presentationMode
+    
+    private func createEmojiBackground() -> some View {
+        GeometryReader { geometry in
+            ForEach(0..<19, id: \.self) { index in
+                let column = index % 3
+                let row = index / 3
+                let xOffset = CGFloat(column) * (geometry.size.width / 2.5) + 60
+                let yOffset = CGFloat(row) * (geometry.size.height / 8) + 120
                 
+                Text(challenges[currentIndex].emojis[index % challenges[currentIndex].emojis.count])
+                    .font(.system(size: 60))
+                    .opacity(0.09)
+                    .rotationEffect(.degrees(Double.random(in: -15...15)))
+                    .position(
+                        x: xOffset + CGFloat.random(in: -20...20),
+                        y: yOffset + CGFloat.random(in: -15...15)
+                    )
+                    .animation(.easeInOut(duration: 0.5).delay(Double(index) * 0.01), value: currentIndex)
+            }
         }
-        
-        
-       
-        VStack(spacing: 10) {
-      
-         
-            
-            Image(challenges[currentIndex].imageName)
-                .resizable()
-                .frame(width: 380, height: 430)
-                .cornerRadius(20)
-            Button(action: {
-                var newIndex: Int
+        .allowsHitTesting(false)
+    }
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                createEmojiBackground()
+                    .ignoresSafeArea()
                 
-                repeat {
-                    newIndex = Int.random(in: 0..<challenges.count)
-                } while newIndex == currentIndex
-                currentIndex = newIndex
-            }) {
-                HStack {
-                    Text("بغير تحدي اليوم")
-                    Image(systemName: "repeat")
-                        .foregroundColor(.blue)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("صور \(challenges[currentIndex].prompt) خلال إنجازك هدف اليوم")
+                        .font(.title)
+                        .bold()
                     
+                    Image(challenges[currentIndex].imageName)
+                        .resizable()
+                        .frame(height: 430)
+                        .cornerRadius(20)
+                    
+                    Button(action: {
+                        var newIndex: Int
+                        repeat {
+                            newIndex = Int.random(in: 0..<challenges.count)
+                        } while newIndex == currentIndex
+                        currentIndex = newIndex
+                    }) {
+                        HStack {
+                            Text("بغير تحدي اليوم")
+                            Image(systemName: "repeat")
+                                .foregroundColor(.blue)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                    
+                    HStack(alignment: .center){
+                        CustomButton(title: "التحدي") {
+                            
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 20)
                 }
-                
+                .padding(.horizontal, 20)
+                .navigationBarBackButtonHidden(true)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button(action: {
+                            if let onBack = onBack {
+                                onBack()
+                            } else {
+                                presentationMode.wrappedValue.dismiss()
+                            }
+                        }) {
+                            Image(systemName: "chevron.backward")
+                        }
+                    }
                 }
-            Spacer()
-
-                       // Start Button
-                       Button(action: {
-                           // Add navigation or action here
-                           print("Start walking challenge")
-                       }) {
-                           Text("مشينا")
-                               .font(.headline)
-                               .frame(maxWidth: .infinity)
-                               .padding()
-                               .background(Color.blue)
-                               .foregroundColor(.white)
-                               .cornerRadius(12)
-                       }
-                       .padding(.horizontal)
-                       .padding(.bottom)
-            
-           
-
-        }.padding()
+                .navigationTitle("تحدي اليوم")
+            }
+        }
     }
 }
 
