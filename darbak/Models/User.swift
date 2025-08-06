@@ -21,7 +21,7 @@ class User: ObservableObject {
     @Published var age: Int = 0
     @Published var height: Double = 0.0
     @Published var sleepingHours: Int = 0
-    @Published var goalSteps: Int = 0
+    @Published var goalSteps: Int = 10000
 
     init(name: String = "", gender: Gender = .male, weight: Int = 0, age: Int = 0, height: Double = 0.0, sleepingHours: Int = 0, goalSteps: Int = 0) {
         self.name = name
