@@ -116,7 +116,7 @@ struct ChallengePage: View {
         }
     }
 }
-git
+
 #Preview {
     ChallengePage()
 }
