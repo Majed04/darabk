@@ -19,14 +19,14 @@ extension User {
     }
 
     func loadFromDefaults() {
-        self.name = UserDefaults.standard.string(forKey: "userName") ?? "unknown"
+        self.name = UserDefaults.standard.string(forKey: "userName") ?? ""
         if let genderRaw = UserDefaults.standard.string(forKey: "userGender"),
            let genderEnum = Gender(rawValue: genderRaw) {
             self.gender = genderEnum
         } else {
             self.gender = .male
         }
-        self.weight = UserDefaults.standard.double(forKey: "userWeight")
+        self.weight = UserDefaults.standard.integer(forKey: "userWeight")
         self.age = UserDefaults.standard.integer(forKey: "userAge")
         self.height = UserDefaults.standard.double(forKey: "userHeight")
         self.sleepingHours = UserDefaults.standard.integer(forKey: "userSleepingHours")

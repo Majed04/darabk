@@ -17,13 +17,13 @@ enum Gender: String, CaseIterable {
 class User: ObservableObject {
     @Published var name: String = ""
     @Published var gender: Gender = .male;
-    @Published var weight: Double = 0.0
+    @Published var weight: Int = 0
     @Published var age: Int = 0
     @Published var height: Double = 0.0
     @Published var sleepingHours: Int = 0
     @Published var goalSteps: Int = 0
 
-    init(name: String = "", gender: Gender = .male, weight: Double = 0.0, age: Int = 0, height: Double = 0.0, sleepingHours: Int = 0, goalSteps: Int = 0) {
+    init(name: String = "", gender: Gender = .male, weight: Int = 0, age: Int = 0, height: Double = 0.0, sleepingHours: Int = 0, goalSteps: Int = 0) {
         self.name = name
         self.gender = gender
         self.weight = weight
