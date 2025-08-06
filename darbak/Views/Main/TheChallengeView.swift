@@ -109,25 +109,26 @@ class HealthKitManager: ObservableObject {
 
 struct TheChallengeView: View {
     @StateObject private var healthKitManager = HealthKitManager()
-    @EnvironmentObject var challengeProgress: ChallengeProgress
+    @StateObject private var challengeProgress = ChallengeProgress()
     @State private var dailyGoal = 8000
     @State private var showingCamera = false
     @State private var cameraPermissionStatus: AVAuthorizationStatus = .notDetermined
     
+    let selectedChallengeIndex: Int?
     var onBack: (() -> Void)? = nil
     
-    // Local challenge mapping to match ChallengePage
-    private let allChallenges = [
-        (title: "صور 4 علامات مرورية خلال إنجازك هدف اليوم", totalPhotos: 4, modelName: "TrafficSigns", hasAI: true),
-        (title: "صور 4 سيارات خلال إنجازك هدف اليوم", totalPhotos: 4, modelName: "TrafficSigns", hasAI: true),
-        (title: "صور 3 سياكل خلال إنجازك هدف اليوم", totalPhotos: 3, modelName: "BikesModel", hasAI: true),
-        (title: "صور 3 قطط خلال إنجازك هدف اليوم", totalPhotos: 3, modelName: "", hasAI: false),
-        (title: "صور 4 طيور خلال إنجازك هدف اليوم", totalPhotos: 4, modelName: "", hasAI: false)
-    ]
+    init(selectedChallengeIndex: Int? = nil, onBack: (() -> Void)? = nil) {
+        self.selectedChallengeIndex = selectedChallengeIndex
+        self.onBack = onBack
+    }
     
-    private var currentChallenge: (title: String, totalPhotos: Int, modelName: String, hasAI: Bool) {
-        let index = min(challengeProgress.selectedChallengeIndex, allChallenges.count - 1)
-        return allChallenges[index]
+    // Use centralized challenges data
+    private let allChallenges = ChallengesData.shared.challenges
+    
+    private var currentChallenge: Challenge {
+        let index = selectedChallengeIndex ?? challengeProgress.selectedChallengeIndex
+        let safeIndex = min(index, allChallenges.count - 1)
+        return allChallenges[safeIndex]
     }
     
     var progressValue: Double {
@@ -233,7 +234,7 @@ struct TheChallengeView: View {
             
             // Challenge description
             VStack(spacing: 5) {
-                Text(currentChallenge.title)
+                                        Text(currentChallenge.fullTitle)
                     .font(.body)
                     .fontWeight(.medium)
                     .multilineTextAlignment(.center)
@@ -349,7 +350,7 @@ struct TheChallengeView: View {
         
         // For now, just show an alert since we can't implement full image picker in this scope
         // In a real implementation, you would present UIImagePickerController
-        print("Opening standard camera for \(currentChallenge.title)")
+                        print("Opening standard camera for \(currentChallenge.fullTitle)")
         
         // Simulate photo taken for demo purposes
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
