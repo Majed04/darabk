@@ -14,9 +14,22 @@
 		1AB167392E38A5340030CC22 /* darbak.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = darbak.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		411077292E42464600E6F6B6 /* Exceptions for "darbak" folder in "darbak" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 1AB167382E38A5340030CC22 /* darbak */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1AB1673B2E38A5340030CC22 /* darbak */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				411077292E42464600E6F6B6 /* Exceptions for "darbak" folder in "darbak" target */,
+			);
 			path = darbak;
 			sourceTree = "<group>";
 		};
@@ -259,13 +272,18 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = darbak/darbak.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = C37RFU6XC7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "دربــــك";
+				INFOPLIST_FILE = darbak/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "دربك";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_NSCameraUsageDescription = "يحتاج هذا التطبيق للوصول للكاميرا في التحديات";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "يحتاج التطبيق إلى الوصول لبيانات خطواتك لتتبع تقدمك في التحدي اليومي";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "يحتاج التطبيق إلى الوصول لبيانات خطواتك لتتبع تقدمك في التحدي اليومي";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -291,13 +309,18 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = darbak/darbak.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = C37RFU6XC7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "دربــــك";
+				INFOPLIST_FILE = darbak/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "دربك";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_NSCameraUsageDescription = "يحتاج هذا التطبيق للوصول للكاميرا في التحديات";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "يحتاج التطبيق إلى الوصول لبيانات خطواتك لتتبع تقدمك في التحدي اليومي";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "يحتاج التطبيق إلى الوصول لبيانات خطواتك لتتبع تقدمك في التحدي اليومي";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
