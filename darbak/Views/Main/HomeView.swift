@@ -11,6 +11,8 @@ struct Home: View {
     @ObservedObject var user: User = User()
     @State private var stepCount = 1000 // Add state for step count
     @State private var streakDays = 7 // Add state for streak count
+    @State private var randomChallenge: Challenge
+    @State private var showingChallengeView = false
     
     // Weekly step data (1000 to 10000 range)
     private let weeklySteps = [8500, 6200, 7800, 9100, 5400, 7200, 6800]
@@ -22,6 +24,12 @@ struct Home: View {
         formatter.locale = Locale(identifier: "en")
         return formatter
     }()
+    
+    init() {
+        // Initialize with a random challenge
+        let challenges = ChallengesData.shared.challenges
+        _randomChallenge = State(initialValue: challenges.randomElement() ?? challenges[0])
+    }
     
     var body: some View {
         VStack(spacing: 20) {
@@ -99,11 +107,11 @@ struct Home: View {
                 
                 // Large rectangular button
                 Button(action: {
-                    // Button action
+                    showingChallengeView = true
                 }) {
                     HStack {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("صور 4 علامات مرورية خلال انجازك هدف اليوم")
+                            Text(randomChallenge.fullTitle)
                                 .font(.title2)
                                 .bold()
                                 .foregroundColor(.white)
@@ -172,11 +180,12 @@ struct Home: View {
                 .padding(.top, 50)
                 
                 Spacer()
-     
-            }
+        }
+        .navigationDestination(isPresented: $showingChallengeView) {
+            ChallengePage(selectedChallenge: randomChallenge)
         }
     }
-    
+}
 
 #Preview {
     Home()

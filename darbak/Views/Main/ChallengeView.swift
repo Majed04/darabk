@@ -7,26 +7,28 @@
 
 import SwiftUI
 
-struct Challenge: Identifiable {
-    let id = UUID()
-    let imageName: String
-    let prompt: String
-    let emojis: [String]
-}
-
 struct ChallengePage: View {
     @State private var currentIndex = 0
+    @State private var showingTheChallengeView = false
     
-    let challenges: [Challenge] = [
-        Challenge(imageName: "StopSign", prompt: "4 علامات مرورية", emojis: ["🛑", "🚦", "⚠️", "🚸", "📍", "🛤️"]),
-        Challenge(imageName: "Car", prompt: "4 سيارات", emojis: ["🚌", "🚍", "🚐", "🚎", "🚗", "🚕"]),
-        Challenge(imageName: "Bus", prompt: "3 باصات", emojis: ["🚌", "🚍", "🚐", "🚎", "🚗", "🚕"]),
-        Challenge(imageName: "Cat", prompt: "3 قطط", emojis: ["🐈", "🐱", "🐈‍⬛", "😸", "🐾"]),
-        Challenge(imageName: "Birds", prompt: "4 طيور", emojis: ["🐦", "🐥", "🦜", "🦤", "🕊️", "🪿"])
-    ]
+    private let challenges = ChallengesData.shared.challenges
+    let selectedChallenge: Challenge?
     
     var onBack: (() -> Void)? = nil
     @Environment(\.presentationMode) private var presentationMode
+    
+    init(selectedChallenge: Challenge? = nil, onBack: (() -> Void)? = nil) {
+        self.selectedChallenge = selectedChallenge
+        self.onBack = onBack
+        
+        // Set initial index based on selected challenge
+        if let selectedChallenge = selectedChallenge,
+           let index = ChallengesData.shared.challenges.firstIndex(where: { $0.id == selectedChallenge.id }) {
+            _currentIndex = State(initialValue: index)
+        } else {
+            _currentIndex = State(initialValue: 0)
+        }
+    }
     
     private func createEmojiBackground() -> some View {
         GeometryReader { geometry in
@@ -83,7 +85,7 @@ struct ChallengePage: View {
                     
                     HStack(alignment: .center){
                         CustomButton(title: "التحدي") {
-                            
+                            showingTheChallengeView = true
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -107,9 +109,14 @@ struct ChallengePage: View {
                 .navigationTitle("تحدي اليوم")
             }
         }
+        .navigationDestination(isPresented: $showingTheChallengeView) {
+            TheChallengeView(selectedChallengeIndex: currentIndex) {
+                showingTheChallengeView = false
+            }
+        }
     }
 }
-
+git
 #Preview {
     ChallengePage()
 }
