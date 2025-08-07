@@ -21,10 +21,8 @@ struct darbakApp: App {
                         TheChallengeView(onBack: {
                             challengeProgress.completeChallenge()
                         })
-                        .environmentObject(challengeProgress)
                     } else {
                         Home()
-                            .environmentObject(challengeProgress)
                     }
                 } else {
                     Onboarding()
