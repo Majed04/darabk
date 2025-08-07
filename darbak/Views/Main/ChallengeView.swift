@@ -95,19 +95,6 @@ struct ChallengePage: View {
                 }
                 .padding(.horizontal, 20)
                 .navigationBarBackButtonHidden(true)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button(action: {
-                            if let onBack = onBack {
-                                onBack()
-                            } else {
-                                presentationMode.wrappedValue.dismiss()
-                            }
-                        }) {
-                            Image(systemName: "chevron.backward")
-                        }
-                    }
-                }
                 .navigationTitle("تحدي اليوم")
             }
         }

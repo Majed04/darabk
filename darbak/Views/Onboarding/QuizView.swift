@@ -1,14 +1,21 @@
 //
-//  QuizView.swift
-//  darbak
+//  QuizView.swift
+//  darbak
 //
-//  Created by Majed on 10/02/1447 AH.
+//  Created by Majed on 10/02/1447 AH.
 //
 import SwiftUI
+import Lottie
+
 
 struct QuizView: View {
-    @State private var progress: Float = 0
+    @State private var progress: Float = 0.0
     @State private var quizNumber: Int = 0
+    @State private var isInputValid: Bool = false
+    @State private var navigateToHome: Bool = false
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
+
+    @EnvironmentObject var user: User
 
     private let totalQuestions = 9
 
@@ -21,24 +28,33 @@ struct QuizView: View {
                     .padding(.bottom, 10)
 
                 currentQuestionView()
-
+                
                 Spacer()
 
                 HStack(alignment: .center) {
-                    
-                    if quizNumber < totalQuestions - 1 {
-                        if quizNumber != 6 {
-                            CustomButton(title: "الي بعده") {
+
+                    if quizNumber != 6 {
+                        let title = quizNumber == totalQuestions - 1 ? "خلصنا" : " الي بعده"
+                        CustomButton(title: title) {
+                            if quizNumber == totalQuestions - 1 {
+                                navigateToHome = true
+                                hasCompletedOnboarding = true
+                            } else {
                                 quizNumber += 1
                                 updateProgress()
                             }
-                            .frame(maxWidth: .infinity)
                         }
+                        .disabled(!isInputValid)
+                        .frame(maxWidth: .infinity)
                     }
+                
                 }
             }
             .padding()
             .navigationTitle("خلنا نعرفك")
+            .navigationDestination(isPresented: $navigateToHome){
+                Home().navigationBarBackButtonHidden(true)
+            }
             .toolbar{
                 if quizNumber > 0 {
                     Button {
@@ -54,19 +70,46 @@ struct QuizView: View {
             }
             .onAppear {
                 updateProgress()
+                isInputValid = checkValidity()
+            }
+            .onChange(of: quizNumber) {
+
+                isInputValid = checkValidity()
             }
         }
     }
 
     private func updateProgress() {
-        progress = Float(quizNumber) / Float(totalQuestions - 1)
-        if totalQuestions == 1 { progress = 1.0 }
-        if quizNumber == 0 && totalQuestions > 1 {
-            progress = 0.0
-        } else if totalQuestions > 1 {
+        if totalQuestions > 1 {
             progress = Float(quizNumber) / Float(totalQuestions - 1)
         } else {
             progress = 1.0
+        }
+    }
+    
+    // MARK: - Input Validation Logic
+    private func checkValidity() -> Bool {
+        switch quizNumber {
+        case 0:
+            return user.name.count >= 3
+        case 1:
+            return true
+        case 2:
+            return user.age > 0 && user.age < 120
+        case 3:
+            return true
+        case 4:
+            return true
+        case 5:
+            return true
+        case 6:
+            return true
+        case 7:
+            return user.goalSteps > 1000
+        case 8:
+            return true
+        default:
+            return false
         }
     }
 
@@ -74,11 +117,19 @@ struct QuizView: View {
     private func currentQuestionView() -> some View {
         switch quizNumber {
         case 0:
+            // Add .onChange to trigger validation whenever the name text changes
             QuestionOne_Name()
+                .onChange(of: user.name) {
+                    isInputValid = checkValidity()
+                }
         case 1:
             QuestionTwo_Gender()
         case 2:
+            // Add .onChange to trigger validation whenever the age text changes
             QuestionThree_Age()
+                .onChange(of: user.age) {
+                    isInputValid = checkValidity()
+                }
         case 3:
             QuestionFour_Weight()
         case 4:
@@ -91,15 +142,20 @@ struct QuizView: View {
                 updateProgress()
             }
         case 7:
+            // Add .onChange to trigger validation whenever the goal steps text changes
             QuestionEight_SetGoal()
+                .onChange(of: user.goalSteps) {
+                    isInputValid = checkValidity()
+                }
         case 8:
-            Final_Screen()
+            FinalView()
         default:
             Text("Something went wrong or quiz completed.")
         }
     }
 }
 
+// MARK: - Individual Question Views
 struct QuestionOne_Name: View {
     @EnvironmentObject var user: User
     var body: some View {
@@ -158,9 +214,10 @@ struct QuestionFive_Height: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text("كم طولك؟").font(.title2).bold()
-            Picker("طولك", selection: $user.weight){
-                ForEach(140...240, id: \.self) { weight in
-                    Text("\(weight) سم")
+            // Corrected binding to user.height
+            Picker("طولك", selection: $user.height){
+                ForEach(140...240, id: \.self) { height in
+                    Text("\(height) سم")
                 }
             }.pickerStyle(.wheel)
         }
@@ -180,6 +237,7 @@ struct QuestionSix_SleepingHours: View {
 }
 
 struct QuestionSeven_StepGoal: View {
+    @EnvironmentObject var user: User
     let action: (_ hasGoal: Bool) -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -211,6 +269,7 @@ struct QuestionSeven_StepGoal: View {
     
             Button(action: {
                 action(false)
+                calculateGoalSteps(user: user)
             }){
                 HStack {
                         Text("لا احسبولي")
@@ -250,11 +309,26 @@ struct QuestionEight_SetGoal: View {
     }
 }
 
-struct Final_Screen: View {
+struct FinalView: View {
+    @EnvironmentObject var user: User
+    @State private var animatedGoalSteps: Int = 0
     var body: some View {
-        Text("Hello, World!")
+        VStack{
+            ZStack{
+                Image("StarHoldingSign")
+                Text("\(animatedGoalSteps)")
+                    .font(.title)
+                    .bold()
+                    .onAppear {
+                        withAnimation(.easeInOut(duration: 1.0)) {
+                            animatedGoalSteps = user.goalSteps
+                        }
+                    }.padding(.top, 40)
+            }
+        }.frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
+
 
 #Preview {
     QuizView().environmentObject(User())

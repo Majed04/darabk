@@ -9,20 +9,25 @@ import SwiftUI
 
 @main
 struct darbakApp: App {
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @StateObject var user = User()
     @StateObject var challengeProgress = ChallengeProgress()
     
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                if challengeProgress.isChallengeInProgress {
-                    TheChallengeView(onBack: {
-                        challengeProgress.completeChallenge()
-                    })
-                    .environmentObject(challengeProgress)
-                } else {
-                    Home()
+                if hasCompletedOnboarding {
+                    if challengeProgress.isChallengeInProgress {
+                        TheChallengeView(onBack: {
+                            challengeProgress.completeChallenge()
+                        })
                         .environmentObject(challengeProgress)
+                    } else {
+                        Home()
+                            .environmentObject(challengeProgress)
+                    }
+                } else {
+                    Onboarding()
                 }
             }
         }

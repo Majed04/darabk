@@ -101,7 +101,7 @@ extension User {
         }
         self.weight = UserDefaults.standard.integer(forKey: "userWeight")
         self.age = UserDefaults.standard.integer(forKey: "userAge")
-        self.height = UserDefaults.standard.double(forKey: "userHeight")
+        self.height = UserDefaults.standard.integer(forKey: "userHeight")
         self.sleepingHours = UserDefaults.standard.integer(forKey: "userSleepingHours")
         
         // Only load goalSteps if a value was previously saved, otherwise keep the default
