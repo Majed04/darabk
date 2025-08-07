@@ -12,6 +12,7 @@ class ChallengeProgress: ObservableObject {
     @Published var completedPhotos: Int = 0
     @Published var selectedChallengeIndex: Int = 0
     @Published var challengeTitle: String = "صور 4 علامات مرورية خلال إنجازك هدف اليوم"
+    @Published var isChallengeInProgress: Bool = false
     
     private var challenges: [Challenge] {
         return ChallengesData.shared.challenges
@@ -25,16 +26,19 @@ class ChallengeProgress: ObservableObject {
         UserDefaults.standard.set(completedPhotos, forKey: "challengeCompletedPhotos")
         UserDefaults.standard.set(selectedChallengeIndex, forKey: "selectedChallengeIndex")
         UserDefaults.standard.set(challengeTitle, forKey: "challengeTitle")
+        UserDefaults.standard.set(isChallengeInProgress, forKey: "isChallengeInProgress")
     }
     
     func loadProgress() {
         completedPhotos = UserDefaults.standard.integer(forKey: "challengeCompletedPhotos")
         selectedChallengeIndex = UserDefaults.standard.integer(forKey: "selectedChallengeIndex")
         challengeTitle = UserDefaults.standard.string(forKey: "challengeTitle") ?? challenges[0].fullTitle
+        isChallengeInProgress = UserDefaults.standard.bool(forKey: "isChallengeInProgress")
     }
     
     func resetProgress() {
         completedPhotos = 0
+        isChallengeInProgress = false
         saveProgress()
     }
     
@@ -55,6 +59,20 @@ class ChallengeProgress: ObservableObject {
         challengeTitle = challenges[index].fullTitle
         resetProgress() // Reset progress when switching challenges
         saveProgress()
+    }
+    
+    func startChallenge() {
+        isChallengeInProgress = true
+        saveProgress()
+    }
+    
+    func completeChallenge() {
+        isChallengeInProgress = false
+        saveProgress()
+    }
+    
+    var isMaxPhotosReached: Bool {
+        return completedPhotos >= challenges[selectedChallengeIndex].totalPhotos
     }
     
     var totalPhotos: Int {

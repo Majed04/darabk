@@ -9,6 +9,7 @@ import SwiftUI
 
 struct Home: View {
     @ObservedObject var user: User = User()
+    @EnvironmentObject var challengeProgress: ChallengeProgress
     @State private var stepCount = 1000 // Add state for step count
     @State private var streakDays = 7 // Add state for streak count
     @State private var randomChallenge: Challenge
@@ -183,10 +184,12 @@ struct Home: View {
         }
         .navigationDestination(isPresented: $showingChallengeView) {
             ChallengePage(selectedChallenge: randomChallenge)
+                .environmentObject(challengeProgress)
         }
     }
 }
 
 #Preview {
     Home()
+        .environmentObject(ChallengeProgress())
 }

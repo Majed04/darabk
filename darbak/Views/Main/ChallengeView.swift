@@ -10,6 +10,7 @@ import SwiftUI
 struct ChallengePage: View {
     @State private var currentIndex = 0
     @State private var showingTheChallengeView = false
+    @EnvironmentObject var challengeProgress: ChallengeProgress
     
     private let challenges = ChallengesData.shared.challenges
     let selectedChallenge: Challenge?
@@ -85,6 +86,7 @@ struct ChallengePage: View {
                     
                     HStack(alignment: .center){
                         CustomButton(title: "التحدي") {
+                            challengeProgress.selectChallenge(index: currentIndex)
                             showingTheChallengeView = true
                         }
                     }
@@ -113,10 +115,11 @@ struct ChallengePage: View {
             TheChallengeView(selectedChallengeIndex: currentIndex) {
                 showingTheChallengeView = false
             }
+            .environmentObject(challengeProgress)
         }
     }
 }
-
 #Preview {
     ChallengePage()
+        .environmentObject(ChallengeProgress())
 }

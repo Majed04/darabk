@@ -10,12 +10,23 @@ import SwiftUI
 @main
 struct darbakApp: App {
     @StateObject var user = User()
+    @StateObject var challengeProgress = ChallengeProgress()
     
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                Home()
+                if challengeProgress.isChallengeInProgress {
+                    TheChallengeView(onBack: {
+                        challengeProgress.completeChallenge()
+                    })
+                    .environmentObject(challengeProgress)
+                } else {
+                    Home()
+                        .environmentObject(challengeProgress)
+                }
             }
-        }.environmentObject(user)
+        }
+        .environmentObject(user)
+        .environmentObject(challengeProgress)
     }
 }

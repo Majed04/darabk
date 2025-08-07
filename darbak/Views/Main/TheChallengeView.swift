@@ -109,7 +109,7 @@ class HealthKitManager: ObservableObject {
 
 struct TheChallengeView: View {
     @StateObject private var healthKitManager = HealthKitManager()
-    @StateObject private var challengeProgress = ChallengeProgress()
+    @EnvironmentObject var challengeProgress: ChallengeProgress
     @State private var dailyGoal = 8000
     @State private var showingCamera = false
     @State private var cameraPermissionStatus: AVAuthorizationStatus = .notDetermined
@@ -254,6 +254,16 @@ struct TheChallengeView: View {
             
             // Camera button
             Button(action: {
+                // Check if max photos reached
+                if challengeProgress.isMaxPhotosReached {
+                    return // Do nothing if limit reached
+                }
+                
+                // Start challenge if not already started
+                if !challengeProgress.isChallengeInProgress {
+                    challengeProgress.startChallenge()
+                }
+                
                 if currentChallenge.hasAI {
                     requestCameraPermissionAndShowCamera()
                 } else {
@@ -263,20 +273,20 @@ struct TheChallengeView: View {
                 VStack(spacing: 12) {
                     Image(systemName: currentChallenge.hasAI ? "camera.viewfinder" : "camera")
                         .font(.system(size: 50, weight: .medium))
-                        .foregroundColor(.black)
+                        .foregroundColor(challengeProgress.isMaxPhotosReached ? .gray : .black)
                     
-                    Text(currentChallenge.hasAI ? "خذ صورة" : "افتح الكاميرا")
+                    Text(challengeProgress.isMaxPhotosReached ? "تم إكمال التحدي" : (currentChallenge.hasAI ? "خذ صورة" : "افتح الكاميرا"))
                         .font(.title2)
                         .fontWeight(.medium)
-                        .foregroundColor(.black)
+                        .foregroundColor(challengeProgress.isMaxPhotosReached ? .gray : .black)
                     
                    
                 }
                 .frame(width: 300, height: 150)
-                .background(currentChallenge.hasAI ? Color.white : Color.gray.opacity(0.1))
+                .background(challengeProgress.isMaxPhotosReached ? Color.gray.opacity(0.1) : (currentChallenge.hasAI ? Color.white : Color.gray.opacity(0.1)))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(currentChallenge.hasAI ? Color.black : Color.gray, lineWidth: 2.5)
+                        .stroke(challengeProgress.isMaxPhotosReached ? Color.gray : (currentChallenge.hasAI ? Color.black : Color.gray), lineWidth: 2.5)
                 )
                 .cornerRadius(12)
             }
@@ -297,6 +307,11 @@ struct TheChallengeView: View {
         .navigationBarHidden(true)
         .onAppear {
             checkCameraPermission()
+            // Reset progress if challenge has changed
+            if let selectedIndex = selectedChallengeIndex, 
+               selectedIndex != challengeProgress.selectedChallengeIndex {
+                challengeProgress.selectChallenge(index: selectedIndex)
+            }
         }
         .sheet(isPresented: $showingCamera) {
             if currentChallenge.hasAI {
@@ -339,6 +354,11 @@ struct TheChallengeView: View {
     
     private func handleDetectionComplete() {
         challengeProgress.incrementProgress()
+        
+        // Check if challenge is completed
+        if challengeProgress.isMaxPhotosReached {
+            challengeProgress.completeChallenge()
+        }
     }
     
     private func openStandardCamera() {
