@@ -114,20 +114,21 @@ struct TheChallengeView: View {
     @State private var showingCamera = false
     @State private var cameraPermissionStatus: AVAuthorizationStatus = .notDetermined
     
+    let selectedChallengeIndex: Int?
     var onBack: (() -> Void)? = nil
     
-    // Local challenge mapping to match ChallengePage
-    private let allChallenges = [
-        (title: "صور 4 علامات مرورية خلال إنجازك هدف اليوم", totalPhotos: 4, modelName: "TrafficSigns", hasAI: true),
-        (title: "صور 4 سيارات خلال إنجازك هدف اليوم", totalPhotos: 4, modelName: "TrafficSigns", hasAI: true),
-        (title: "صور 3 سياكل خلال إنجازك هدف اليوم", totalPhotos: 3, modelName: "BikesModel", hasAI: true),
-        (title: "صور 3 قطط خلال إنجازك هدف اليوم", totalPhotos: 3, modelName: "", hasAI: false),
-        (title: "صور 4 طيور خلال إنجازك هدف اليوم", totalPhotos: 4, modelName: "", hasAI: false)
-    ]
+    init(selectedChallengeIndex: Int? = nil, onBack: (() -> Void)? = nil) {
+        self.selectedChallengeIndex = selectedChallengeIndex
+        self.onBack = onBack
+    }
     
-    private var currentChallenge: (title: String, totalPhotos: Int, modelName: String, hasAI: Bool) {
-        let index = min(challengeProgress.selectedChallengeIndex, allChallenges.count - 1)
-        return allChallenges[index]
+    // Use centralized challenges data
+    private let allChallenges = ChallengesData.shared.challenges
+    
+    private var currentChallenge: Challenge {
+        let index = selectedChallengeIndex ?? challengeProgress.selectedChallengeIndex
+        let safeIndex = min(index, allChallenges.count - 1)
+        return allChallenges[safeIndex]
     }
     
     var progressValue: Double {
@@ -233,7 +234,7 @@ struct TheChallengeView: View {
             
             // Challenge description
             VStack(spacing: 5) {
-                Text(currentChallenge.title)
+                                        Text(currentChallenge.fullTitle)
                     .font(.body)
                     .fontWeight(.medium)
                     .multilineTextAlignment(.center)
@@ -253,6 +254,16 @@ struct TheChallengeView: View {
             
             // Camera button
             Button(action: {
+                // Check if max photos reached
+                if challengeProgress.isMaxPhotosReached {
+                    return // Do nothing if limit reached
+                }
+                
+                // Start challenge if not already started
+                if !challengeProgress.isChallengeInProgress {
+                    challengeProgress.startChallenge()
+                }
+                
                 if currentChallenge.hasAI {
                     requestCameraPermissionAndShowCamera()
                 } else {
@@ -262,20 +273,20 @@ struct TheChallengeView: View {
                 VStack(spacing: 12) {
                     Image(systemName: currentChallenge.hasAI ? "camera.viewfinder" : "camera")
                         .font(.system(size: 50, weight: .medium))
-                        .foregroundColor(.black)
+                        .foregroundColor(challengeProgress.isMaxPhotosReached ? .gray : .black)
                     
-                    Text(currentChallenge.hasAI ? "خذ صورة" : "افتح الكاميرا")
+                    Text(challengeProgress.isMaxPhotosReached ? "تم إكمال التحدي" : (currentChallenge.hasAI ? "خذ صورة" : "افتح الكاميرا"))
                         .font(.title2)
                         .fontWeight(.medium)
-                        .foregroundColor(.black)
+                        .foregroundColor(challengeProgress.isMaxPhotosReached ? .gray : .black)
                     
                    
                 }
                 .frame(width: 300, height: 150)
-                .background(currentChallenge.hasAI ? Color.white : Color.gray.opacity(0.1))
+                .background(challengeProgress.isMaxPhotosReached ? Color.gray.opacity(0.1) : (currentChallenge.hasAI ? Color.white : Color.gray.opacity(0.1)))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(currentChallenge.hasAI ? Color.black : Color.gray, lineWidth: 2.5)
+                        .stroke(challengeProgress.isMaxPhotosReached ? Color.gray : (currentChallenge.hasAI ? Color.black : Color.gray), lineWidth: 2.5)
                 )
                 .cornerRadius(12)
             }
@@ -296,6 +307,11 @@ struct TheChallengeView: View {
         .navigationBarHidden(true)
         .onAppear {
             checkCameraPermission()
+            // Reset progress if challenge has changed
+            if let selectedIndex = selectedChallengeIndex, 
+               selectedIndex != challengeProgress.selectedChallengeIndex {
+                challengeProgress.selectChallenge(index: selectedIndex)
+            }
         }
         .sheet(isPresented: $showingCamera) {
             if currentChallenge.hasAI {
@@ -338,6 +354,11 @@ struct TheChallengeView: View {
     
     private func handleDetectionComplete() {
         challengeProgress.incrementProgress()
+        
+        // Check if challenge is completed
+        if challengeProgress.isMaxPhotosReached {
+            challengeProgress.completeChallenge()
+        }
     }
     
     private func openStandardCamera() {
@@ -349,7 +370,7 @@ struct TheChallengeView: View {
         
         // For now, just show an alert since we can't implement full image picker in this scope
         // In a real implementation, you would present UIImagePickerController
-        print("Opening standard camera for \(currentChallenge.title)")
+                        print("Opening standard camera for \(currentChallenge.fullTitle)")
         
         // Simulate photo taken for demo purposes
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

@@ -11,13 +11,12 @@ import Foundation
 class ChallengeProgress: ObservableObject {
     @Published var completedPhotos: Int = 0
     @Published var selectedChallengeIndex: Int = 0
-    @Published var challengeTitle: String = "صور 4 علامات قف خلال انجازك هدف اليوم"
+    @Published var challengeTitle: String = "صور 4 علامات مرورية خلال إنجازك هدف اليوم"
+    @Published var isChallengeInProgress: Bool = false
     
-    let challenges = [
-        (title: "صور 4 علامات قف خلال انجازك هدف اليوم", totalPhotos: 4, modelName: "TrafficSigns"),
-        (title: "صور 4 سيارات خلال انجازك هدف اليوم", totalPhotos: 4, modelName: "TrafficSigns"),
-        (title: "صور 3 سياكل خلال انجازك هدف اليوم", totalPhotos: 3, modelName: "BikesModel")
-    ]
+    private var challenges: [Challenge] {
+        return ChallengesData.shared.challenges
+    }
     
     init() {
         loadProgress()
@@ -27,16 +26,19 @@ class ChallengeProgress: ObservableObject {
         UserDefaults.standard.set(completedPhotos, forKey: "challengeCompletedPhotos")
         UserDefaults.standard.set(selectedChallengeIndex, forKey: "selectedChallengeIndex")
         UserDefaults.standard.set(challengeTitle, forKey: "challengeTitle")
+        UserDefaults.standard.set(isChallengeInProgress, forKey: "isChallengeInProgress")
     }
     
     func loadProgress() {
         completedPhotos = UserDefaults.standard.integer(forKey: "challengeCompletedPhotos")
         selectedChallengeIndex = UserDefaults.standard.integer(forKey: "selectedChallengeIndex")
-        challengeTitle = UserDefaults.standard.string(forKey: "challengeTitle") ?? challenges[0].title
+        challengeTitle = UserDefaults.standard.string(forKey: "challengeTitle") ?? challenges[0].fullTitle
+        isChallengeInProgress = UserDefaults.standard.bool(forKey: "isChallengeInProgress")
     }
     
     func resetProgress() {
         completedPhotos = 0
+        isChallengeInProgress = false
         saveProgress()
     }
     
@@ -54,9 +56,23 @@ class ChallengeProgress: ObservableObject {
     
     func selectChallenge(index: Int) {
         selectedChallengeIndex = index
-        challengeTitle = challenges[index].title
+        challengeTitle = challenges[index].fullTitle
         resetProgress() // Reset progress when switching challenges
         saveProgress()
+    }
+    
+    func startChallenge() {
+        isChallengeInProgress = true
+        saveProgress()
+    }
+    
+    func completeChallenge() {
+        isChallengeInProgress = false
+        saveProgress()
+    }
+    
+    var isMaxPhotosReached: Bool {
+        return completedPhotos >= challenges[selectedChallengeIndex].totalPhotos
     }
     
     var totalPhotos: Int {

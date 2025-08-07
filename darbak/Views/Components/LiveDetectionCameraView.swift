@@ -9,6 +9,7 @@ import SwiftUI
 import AVFoundation
 import CoreML
 import Vision
+import AudioToolbox
 
 struct LiveDetectionCameraView: View {
     @Binding var isPresented: Bool
@@ -22,7 +23,7 @@ struct LiveDetectionCameraView: View {
     
     var body: some View {
         ZStack {
-            // Camera preview with pinch gesture
+            // Clean camera preview with pinch gesture - no detection UI
             CameraPreviewView(cameraManager: cameraManager)
                 .ignoresSafeArea()
                 .scaleEffect(1.0)
@@ -38,167 +39,55 @@ struct LiveDetectionCameraView: View {
                         }
                 )
             
-            // Detection status overlay for live feedback with ultra-precise thresholds
-            if let confidence = cameraManager.lastDetectionConfidence, confidence > 0.5 && !cameraManager.hasDetectedInThisSession {
-                VStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(
-                            confidence > 0.85 ? Color.green : 
-                            confidence > 0.75 ? Color.blue :
-                            confidence > 0.65 ? Color.orange : Color.yellow, 
-                            lineWidth: confidence > 0.8 ? 5 : confidence > 0.7 ? 4 : 3
-                        )
-                        .fill(Color.clear)
-                        .padding(20)
-                        .animation(.easeInOut(duration: 0.3), value: confidence)
+            // Minimal UI overlay - only essential controls
+            VStack {
+                // Top controls only
+                HStack {
+                    Button("إلغاء") {
+                        isPresented = false
+                    }
+                    .foregroundColor(.white)
+                    .font(.headline)
+                    .padding()
                     
-                    // Show confidence percentage
-                    VStack {
-                        Text("\(Int(confidence * 100))%")
+                    Spacer()
+                    
+                    // Camera switch button
+                    Button(action: {
+                        cameraManager.switchCamera()
+                    }) {
+                        Image(systemName: "camera.rotate")
                             .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(
-                                confidence > 0.85 ? .green : 
-                                confidence > 0.75 ? .blue :
-                                confidence > 0.65 ? .orange : .yellow
-                            )
-                        
-                        Text("ثقة الاكتشاف")
-                            .font(.caption)
                             .foregroundColor(.white)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.black.opacity(0.7))
-                    .cornerRadius(8)
-                    .animation(.easeInOut(duration: 0.3), value: confidence)
-                }
-            }
-            
-            // Detection overlay
-            VStack {
-                // Top section with title and controls
-                VStack(spacing: 12) {
-                    // Challenge title
-                    Text(challengeProgress.challengeTitle)
-                        .font(.title3)
-                        .fontWeight(.medium)
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(Color.black.opacity(0.7))
-                        .cornerRadius(12)
-                    
-                    // Controls
-                    HStack {
-                        Button("إلغاء") {
-                            isPresented = false
-                        }
-                        .foregroundColor(.white)
-                        .font(.headline)
-                        .padding()
-                        
-                        Spacer()
-                        
-                        // Lens switching button
-                        Button(action: {
-                            cameraManager.switchCamera()
-                        }) {
-                            Image(systemName: "camera.rotate")
-                                .font(.title2)
-                                .foregroundColor(.white)
-                        }
-                        .padding()
-                    }
+                    .padding()
                 }
                 .padding(.top, 10)
                 
                 Spacer()
                 
-                // Detection status
-                VStack(spacing: 8) {
-                    if cameraManager.hasDetectedInThisSession {
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                                .font(.title2)
-                            
-                            Text(getSuccessText())
-                                .font(.headline)
-                                .foregroundColor(.green)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.8))
-                        .cornerRadius(8)
-                    } else {
+                // Only show success feedback when detection completes
+                if cameraManager.hasDetectedInThisSession {
+                    VStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.green)
                         
+                        Text(getSuccessText())
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.black.opacity(0.7))
+                            .cornerRadius(8)
                     }
                 }
                 
                 Spacer()
-                
-                // Bottom section
-                VStack(spacing: 12) {
-                    // Progress indicator
-                    Text("\(challengeProgress.completedPhotos)/\(challengeProgress.totalPhotos)")
-                        .font(.title)
-                        .fontWeight(.medium)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(Color.black.opacity(0.8))
-                        .cornerRadius(10)
-                    
-                    if !cameraManager.hasDetectedInThisSession {
-                        // Show zoom indicator and test button during detection
-                        HStack {
-                            // Zoom indicator
-                            Text("\(currentZoomFactor, specifier: "%.1f")x")
-                                .font(.subheadline)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.black.opacity(0.6))
-                                .cornerRadius(6)
-                            
-                            Spacer()
-                            
-                            // Debug: Manual trigger button
-                            Button(action: {
-                                handleDetectionSuccess()
-                            }) {
-                                Text("TEST")
-                                    .font(.caption)
-                                    .foregroundColor(.white)
-                                    .frame(width: 50, height: 30)
-                                    .background(Color.red.opacity(0.8))
-                                    .cornerRadius(6)
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                    } else {
-                        // Show completion message
-                        VStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 30))
-                                .foregroundColor(.green)
-                            
-                            Text("سيتم إغلاق الكاميرا تلقائياً")
-                                .font(.subheadline)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 6)
-                                .background(Color.black.opacity(0.7))
-                                .cornerRadius(8)
-                        }
-                    }
-                }
-                .padding(.bottom, 50)
             }
             
-            // Detection feedback overlay
+            // Final detection success overlay
             if showingDetectionFeedback {
                 VStack {
                     Image(systemName: "checkmark.circle.fill")
@@ -220,6 +109,7 @@ struct LiveDetectionCameraView: View {
             lastZoomFactor = 1.0
             currentZoomFactor = 1.0
             cameraManager.loadMLModel(modelName: challengeProgress.currentModelName)
+            cameraManager.setChallengePrompt(challengeProgress.challengeTitle)
             cameraManager.startSession()
             cameraManager.onDetectionSuccess = {
                 handleDetectionSuccess()
@@ -227,6 +117,12 @@ struct LiveDetectionCameraView: View {
         }
         .onDisappear {
             cameraManager.stopSession()
+        }
+        .onChange(of: challengeProgress.selectedChallengeIndex) {
+            // Update challenge prompt for YOLO filtering
+            cameraManager.setChallengePrompt(challengeProgress.challengeTitle)
+            // Reset detection state for new challenge
+            cameraManager.resetDetectionState()
         }
     }
     
@@ -247,21 +143,57 @@ struct LiveDetectionCameraView: View {
     }
     
     private func getSearchText() -> String {
-        switch challengeProgress.currentModelName {
-        case "BikesModel":
-            return "ابحث عن سياكل"
-        default:
+        let challenges = ChallengesData.shared.challenges
+        let currentChallenge = challenges[challengeProgress.selectedChallengeIndex]
+        
+        // Extract the object type from the challenge prompt
+        let prompt = currentChallenge.prompt
+        
+        if prompt.contains("علامات مرورية") {
             return "ابحث عن لافتة مرورية"
+        } else if prompt.contains("سيارات") {
+            return "ابحث عن سيارة"
+        } else if prompt.contains("باصات") {
+            return "ابحث عن باص"
+        } else if prompt.contains("قطط") {
+            return "ابحث عن قطة"
+        } else if prompt.contains("طيور") {
+            return "ابحث عن طائر"
+        } else if prompt.contains("سياكل") {
+            return "ابحث عن دراجة"
+        } else {
+            return "ابحث عن العنصر"
         }
     }
     
     private func getSuccessText() -> String {
-        switch challengeProgress.currentModelName {
-        case "BikesModel":
-            return "تم اكتشاف العنصر!"
-        default:
+        let challenges = ChallengesData.shared.challenges
+        let currentChallenge = challenges[challengeProgress.selectedChallengeIndex]
+        
+        // Extract the object type from the challenge prompt
+        let prompt = currentChallenge.prompt
+        
+        if prompt.contains("علامات مرورية") {
             return "تم اكتشاف اللافتة المرورية!"
+        } else if prompt.contains("سيارات") {
+            return "تم اكتشاف السيارة!"
+        } else if prompt.contains("باصات") {
+            return "تم اكتشاف الباص!"
+        } else if prompt.contains("قطط") {
+            return "تم اكتشاف القطة!"
+        } else if prompt.contains("طيور") {
+            return "تم اكتشاف الطائر!"
+        } else if prompt.contains("سياكل") {
+            return "تم اكتشاف الدراجة!"
+        } else {
+            return "تم اكتشاف العنصر!"
         }
+    }
+    
+    private func confidenceColor(for confidence: Float) -> Color {
+        if confidence >= 0.8 { return .green }
+        if confidence >= 0.6 { return .orange }
+        return .red
     }
 }
 
@@ -302,65 +234,136 @@ class LiveDetectionCameraManager: NSObject, ObservableObject {
         return layer
     }()
     
+    // MARK: - Published Properties
     @Published var lastDetectionConfidence: Float?
-    @Published var recentDetections: [(identifier: String, confidence: Float)] = []
+    @Published var recentDetections: [(identifier: String, confidence: Float, boundingBox: CGRect)] = []
     @Published var hasDetectedInThisSession = false
+    @Published var currentlyActiveModel: String = ""
+    @Published var detectionCount: Int = 0
+    @Published var detectionStatus: String = "جاري البحث..."
+    
     var onDetectionSuccess: (() -> Void)?
     
+    // MARK: - Model Management
     private var mlModel: MLModel?
     private var visionModel: VNCoreMLModel?
+    private var currentModelName: String = ""
+    private var currentChallengePrompt: String = ""  // Track current challenge for YOLO filtering
+    
+    // MARK: - YOLO Detection Parameters (Optimized for Real-world Usage)
+    private let confidenceThreshold: Float = 0.75  // Optimized for YOLO v3
+    private let minimumDetectionSize: Float = 0.015  // Slightly smaller for distant objects
+    private let cooldownDuration: TimeInterval = 1.5  // Faster response
+    private let maxDetectionsPerSecond: Int = 5  // Increased for better responsiveness
+    private let requiredConsistentFrames: Int = 3  // Reduced for faster detection
+    
+    // MARK: - Debug Mode (Disabled for Clean UI)
+    private let isDebugMode: Bool = false  // Disabled for production
+    @Published var debugDetections: [String] = []  // Not shown in UI
+    
+    // MARK: - Detection State Management
     private var lastDetectionTime: Date = Date.distantPast
-    private var currentModelName: String = "TrafficSigns"
-    
-    // Detection averaging for improved accuracy
-    private var detectionHistory: [(confidence: Float, timestamp: Date)] = []
-    private var consecutiveDetections = 0
-    private let requiredConsecutiveDetections = 5
+    private var lastSuccessfulDetectionTime: Date = Date.distantPast
+    private var detectionHistory: [(confidence: Float, timestamp: Date, boundingBox: CGRect)] = []
     private let detectionHistoryWindow: TimeInterval = 3.0
+    private var frameCount: Int = 0
+    private var lastProcessedTime: Date = Date()
     
-    // Ultra-precise detection validation
-    private var stableDetectionCount = 0
-    private var lastConfidenceValues: [Float] = []
-    private let maxConfidenceVariance: Float = 0.15
+    // MARK: - Performance Optimization (Apple's Recommendations)
+    private let frameSkipInterval: Int = 3  // Process every 3rd frame for performance
+    private var isProcessingFrame: Bool = false
+    private var pendingRequests: Int = 0  // Track pending Vision requests
+    private let maxPendingRequests: Int = 1  // Apple recommends queue size of 1
+    private var bufferSize = CGSize.zero  // Track buffer dimensions for coordinate conversion
     
     override init() {
         super.init()
         setupCaptureSession()
     }
     
+    // MARK: - YOLO Model Loading with Memory Management
     func loadMLModel(modelName: String) {
-        currentModelName = modelName
-        print("🤖 Loading model: \(modelName)")
+        // Always use YOLOv3 for all challenges
+        let actualModelName = "YOLOv3"
         
-        do {
-            if modelName == "BikesModel" {
-                let bikesModel = try BikesModel(configuration: MLModelConfiguration())
-                mlModel = bikesModel.model
-            } else {
-                let trafficSignsModel = try TrafficSigns(configuration: MLModelConfiguration())
-                mlModel = trafficSignsModel.model
+        // Prevent loading the same model twice
+        guard actualModelName != currentModelName || visionModel == nil else {
+            print("🔄 Model \(actualModelName) already loaded")
+            return
+        }
+        
+        // Clear previous model from memory
+        unloadCurrentModel()
+        
+        print("🤖 Loading YOLO model: \(actualModelName)")
+        currentModelName = actualModelName
+        
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            do {
+                // Load YOLOv3 model
+                guard let modelURL = Bundle.main.url(forResource: "YOLOv3", withExtension: "mlmodelc") ??
+                                    Bundle.main.url(forResource: "YOLOv3", withExtension: "mlmodel") else {
+                    print("❌ YOLOv3 model file not found in bundle")
+                    DispatchQueue.main.async {
+                        self?.detectionStatus = "نموذج YOLOv3 غير موجود"
+                    }
+                    return
+                }
+                
+                let model = try MLModel(contentsOf: modelURL, configuration: self?.createOptimizedMLConfiguration() ?? MLModelConfiguration())
+                let visionModel = try VNCoreMLModel(for: model)
+                
+                DispatchQueue.main.async {
+                    self?.mlModel = model
+                    self?.visionModel = visionModel
+                    self?.currentlyActiveModel = actualModelName
+                    self?.detectionStatus = "نموذج YOLO جاهز"
+                    
+                    print("✅ Successfully loaded YOLOv3 object detection model")
+                    print("📋 Model input: \(model.modelDescription.inputDescriptionsByName)")
+                    print("📋 Model output: \(model.modelDescription.outputDescriptionsByName)")
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self?.detectionStatus = "خطأ في تحميل نموذج YOLO"
+                }
+                print("❌ Failed to load YOLOv3 model: \(error)")
             }
-            
-            visionModel = try VNCoreMLModel(for: mlModel!)
-            
-            // Print model information
-            print("✅ Successfully loaded \(modelName) object detection model")
-            print("Model description: \(mlModel!.modelDescription)")
-            
-            // This is an object detection model, not a classifier
-            let metadata = mlModel!.modelDescription.metadata
-            print("📋 Model metadata: \(metadata)")
-        } catch {
-            print("❌ Failed to load \(modelName) model: \(error)")
         }
     }
     
+    private func createOptimizedMLConfiguration() -> MLModelConfiguration {
+        let config = MLModelConfiguration()
+        config.computeUnits = .all  // Use all available compute units (CPU, GPU, Neural Engine)
+        config.allowLowPrecisionAccumulationOnGPU = true
+        return config
+    }
+    
+    private func unloadCurrentModel() {
+        mlModel = nil
+        visionModel = nil
+        currentlyActiveModel = ""
+        print("🗑️ Previous model unloaded from memory")
+    }
+    
     private func setupCaptureSession() {
-        // Use high quality preset for better detection
-        captureSession.sessionPreset = .photo
+        // Configure session based on Apple's recommendations
+        captureSession.beginConfiguration()
         
-        guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+        // Choose resolution based on model requirements - prefer VGA for better performance
+        // Apple recommends not selecting highest resolution unless required
+        captureSession.sessionPreset = .vga640x480  // Apple's recommended preset for Vision
+        
+        // Discovery session to find the best wide angle camera
+        let deviceDiscoverySession = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInWideAngleCamera],
+            mediaType: .video,
+            position: .back
+        )
+        
+        guard let videoDevice = deviceDiscoverySession.devices.first else {
             print("Could not get video device")
+            captureSession.commitConfiguration()
             return
         }
         
@@ -370,86 +373,127 @@ class LiveDetectionCameraManager: NSObject, ObservableObject {
         configureCameraForDetection(device: videoDevice)
         
         do {
-            let videoDeviceInput = try AVCaptureDeviceInput(device: videoDevice)
+            let deviceInput = try AVCaptureDeviceInput(device: videoDevice)
             
-            if captureSession.canAddInput(videoDeviceInput) {
-                captureSession.addInput(videoDeviceInput)
+            guard captureSession.canAddInput(deviceInput) else {
+                print("Could not add video device input to the session")
+                captureSession.commitConfiguration()
+                return
             }
+            captureSession.addInput(deviceInput)
             
             if captureSession.canAddOutput(videoDataOutput) {
                 captureSession.addOutput(videoDataOutput)
                 
-                // Optimize video output settings for ML
+                // Configure video output according to Apple's best practices
                 videoDataOutput.alwaysDiscardsLateVideoFrames = true
+                
+                // Use Apple's recommended pixel format for Vision
                 videoDataOutput.videoSettings = [
-                    kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+                    kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
                 ]
                 
-                // Enable video stabilization for steadier detection
-                if let connection = videoDataOutput.connection(with: .video) {
-                    if connection.isVideoStabilizationSupported {
-                        connection.preferredVideoStabilizationMode = .auto
+                // Configure connection for optimal detection
+                if let captureConnection = videoDataOutput.connection(with: .video) {
+                    // Always process frames as recommended
+                    captureConnection.isEnabled = true
+                    
+                    // Enable video stabilization for steadier detection
+                    if captureConnection.isVideoStabilizationSupported {
+                        captureConnection.preferredVideoStabilizationMode = .auto
                         print("✅ Video stabilization enabled")
+                    }
+                    
+                    // Get buffer dimensions as Apple recommends
+                    do {
+                        try videoDevice.lockForConfiguration()
+                        let dimensions = CMVideoFormatDescriptionGetDimensions(videoDevice.activeFormat.formatDescription)
+                        bufferSize.width = CGFloat(dimensions.width)
+                        bufferSize.height = CGFloat(dimensions.height)
+                        videoDevice.unlockForConfiguration()
+                        print("✅ Buffer size configured: \(bufferSize)")
+                    } catch {
+                        print("❌ Could not get buffer dimensions: \(error)")
                     }
                 }
                 
                 videoDataOutput.setSampleBufferDelegate(self, queue: videoDataOutputQueue)
+            } else {
+                print("Could not add video data output to the session")
+                captureSession.commitConfiguration()
+                return
             }
+            
         } catch {
             print("Could not create video device input: \(error)")
+            captureSession.commitConfiguration()
+            return
         }
+        
+        // Commit configuration changes
+        captureSession.commitConfiguration()
+        print("✅ Capture session configured with VGA resolution for optimal Vision performance")
     }
     
     private func configureCameraForDetection(device: AVCaptureDevice) {
         do {
             try device.lockForConfiguration()
             
-            // Enable auto focus for sharp images
-            if device.isFocusModeSupported(.autoFocus) {
-                device.focusMode = .autoFocus
+            // Configure autofocus for optimal object detection
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
+                print("✅ Continuous autofocus enabled")
             }
             
-            // Optimize exposure for detection
-            if device.isExposureModeSupported(.autoExpose) {
-                device.exposureMode = .autoExpose
+            // Configure exposure with lock capability
+            if device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposureMode = .continuousAutoExposure
             }
             
-            // Enable image stabilization if available
-            if device.activeFormat.isVideoStabilizationModeSupported(.auto) {
-                // Will be set on connection later
+            // Enable auto white balance for consistent detection
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
             }
             
-            // Set frame rate for smooth detection
-            let frameRate = CMTimeMake(value: 1, timescale: 30) // 30 FPS
-            device.activeVideoMinFrameDuration = frameRate
-            device.activeVideoMaxFrameDuration = frameRate
+            // Set 30fps frame rate as specified
+            let targetFrameRate: Int32 = 30
+            let supportedFormats = device.formats
+            
+            for format in supportedFormats {
+                let ranges = format.videoSupportedFrameRateRanges
+                for range in ranges {
+                    if range.minFrameRate <= Double(targetFrameRate) && Double(targetFrameRate) <= range.maxFrameRate {
+                        device.activeFormat = format
+                        device.activeVideoMinFrameDuration = CMTime(value: 1, timescale: targetFrameRate)
+                        device.activeVideoMaxFrameDuration = CMTime(value: 1, timescale: targetFrameRate)
+                        print("✅ Frame rate set to \(targetFrameRate)fps")
+                        break
+                    }
+                }
+            }
+            
+            // Configure low light boost if available
+            if device.isLowLightBoostSupported {
+                device.automaticallyEnablesLowLightBoostWhenAvailable = true
+            }
             
             device.unlockForConfiguration()
-            
-            print("✅ Camera configured for optimal detection")
         } catch {
-            print("❌ Could not configure camera: \(error)")
+            print("Could not configure camera: \(error)")
         }
     }
     
     func startSession() {
-        // Reset detection state for new session
-        hasDetectedInThisSession = false
-        lastDetectionTime = Date.distantPast
-        lastDetectionConfidence = nil
-        recentDetections.removeAll()
-        
-        // Reset detection averaging variables
-        detectionHistory.removeAll()
-        consecutiveDetections = 0
-        
-        // Reset ultra-precise validation variables
-        stableDetectionCount = 0
-        lastConfidenceValues.removeAll()
+        // Reset all detection state
+        resetDetectionState()
+        detectionStatus = "جاري البحث..."
         
         if !captureSession.isRunning {
             DispatchQueue.global(qos: .background).async {
                 self.captureSession.startRunning()
+                DispatchQueue.main.async {
+                    self.detectionStatus = "جاهز للاكتشاف"
+                }
             }
         }
     }
@@ -499,200 +543,603 @@ class LiveDetectionCameraManager: NSObject, ObservableObject {
             print("Could not switch camera: \(error)")
         }
     }
+    
+    func resetDetectionState() {
+        hasDetectedInThisSession = false
+        lastDetectionTime = Date.distantPast
+        lastSuccessfulDetectionTime = Date.distantPast
+        lastDetectionConfidence = nil
+        recentDetections.removeAll()
+        detectionHistory.removeAll()
+        detectionCount = 0
+        frameCount = 0
+        isProcessingFrame = false
+        pendingRequests = 0  // Reset pending requests counter
+        lastProcessedTime = Date()
+        print("🔄 Detection state reset")
+    }
+    
+    // MARK: - Challenge Configuration
+    func setChallengePrompt(_ prompt: String) {
+        currentChallengePrompt = prompt
+        print("🎯 Challenge set to: \(prompt)")
+    }
+    
+    // MARK: - Device Orientation Handling (Apple's Recommended Approach)
+    private func getCurrentCameraOrientation() -> CGImagePropertyOrientation {
+        let curDeviceOrientation = UIDevice.current.orientation
+        let exifOrientation: CGImagePropertyOrientation
+        
+        switch curDeviceOrientation {
+        case UIDeviceOrientation.portraitUpsideDown:  // Device oriented vertically, home button on the top
+            exifOrientation = .left
+        case UIDeviceOrientation.landscapeLeft:       // Device oriented horizontally, home button on the right
+            exifOrientation = .upMirrored
+        case UIDeviceOrientation.landscapeRight:      // Device oriented horizontally, home button on the left
+            exifOrientation = .down
+        case UIDeviceOrientation.portrait:            // Device oriented vertically, home button on the bottom
+            exifOrientation = .up
+        default:
+            exifOrientation = .up
+        }
+        
+        return exifOrientation
+    }
+    
+
 }
 
 // MARK: - Video Data Output Delegate
 extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        // Apple's Performance Recommendations:
+        // 1. Don't hold on to more than one Vision request at a time
+        guard pendingRequests < maxPendingRequests else { 
+            // Skip frame if too many requests pending (buffer overflow prevention)
+            return 
+        }
+        
+        // 2. Skip frames for performance (process every nth frame)
+        frameCount += 1
+        guard frameCount % frameSkipInterval == 0 else { return }
+        
+        // 3. Ensure we have a loaded model
         guard let visionModel = visionModel,
               let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
             return
         }
         
+        // Skip if already detected in this session
+        guard !hasDetectedInThisSession else { return }
+        
+        // 4. Rate limiting: Limit detections per second
+        let now = Date()
+        guard now.timeIntervalSince(lastProcessedTime) >= 1.0 / Double(maxDetectionsPerSecond) else {
+            return
+        }
+        
+        // Increment pending requests counter
+        pendingRequests += 1
+        lastProcessedTime = now
+        
         let request = VNCoreMLRequest(model: visionModel) { [weak self] request, error in
+            defer {
+                DispatchQueue.main.async {
+                    // Decrement pending requests counter
+                    self?.pendingRequests = max(0, (self?.pendingRequests ?? 1) - 1)
+                    self?.isProcessingFrame = false
+                }
+            }
+            
             if let error = error {
                 print("Vision request error: \(error)")
                 return
             }
             
-            self?.processDetectionResults(request.results)
+            // Process results on main queue for UI updates as Apple recommends
+            DispatchQueue.main.async {
+                self?.processDetectionResults(request.results, timestamp: now)
+            }
         }
         
-        // Optimize request for better accuracy
-        request.imageCropAndScaleOption = .centerCrop
-        request.usesCPUOnly = false // Use GPU when available for faster processing
+        // Optimize request configuration for object detection
+        request.imageCropAndScaleOption = .scaleFit
         
-        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up, options: [:])
+        // Use all available compute units for best performance
+        if #available(iOS 17.0, *) {
+            // Use default processing in iOS 17+
+        } else {
+            request.usesCPUOnly = false
+        }
         
+        // Configure image orientation based on device orientation - Apple's recommended approach
+        let exifOrientation = getCurrentCameraOrientation()
+        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: exifOrientation, options: [:])
+        
+        // Perform detection on background queue
+        DispatchQueue.global(qos: .userInitiated).async {
         do {
             try handler.perform([request])
         } catch {
             print("Failed to perform vision request: \(error)")
+                DispatchQueue.main.async {
+                    self.isProcessingFrame = false
+                }
+            }
         }
     }
     
-    private func processDetectionResults(_ results: [VNObservation]?) {
+    private func processDetectionResults(_ results: [VNObservation]?, timestamp: Date) {
         guard let results = results else { 
-            print("No detection results")
+            DispatchQueue.main.async {
+                self.detectionStatus = "لا يوجد نتائج"
+            }
             return 
         }
         
         // Skip if already detected in this session
-        guard !hasDetectedInThisSession else {
+        guard !hasDetectedInThisSession else { return }
+        
+        // Apply cooldown period
+        guard timestamp.timeIntervalSince(lastSuccessfulDetectionTime) >= cooldownDuration else {
             return
         }
         
-        // Ultra-fast response for continuous detection analysis
-        let now = Date()
-        guard now.timeIntervalSince(lastDetectionTime) > 0.1 else {
-            return
-        }
-        
+        var allDetections: [(identifier: String, confidence: Float, boundingBox: CGRect)] = []
         var bestConfidence: Float = 0.0
-        var detectedTrafficSign = false
-        var newDetections: [(identifier: String, confidence: Float)] = []
         
-        print("=== Object Detection Results ===")
-        
-        for result in results {
-            if let coreMLResult = result as? VNCoreMLFeatureValueObservation {
-                // Handle object detection output
-                if let multiArray = coreMLResult.featureValue.multiArrayValue {
-                    print("Detected CoreML output: \(coreMLResult.featureName)")
-                    if coreMLResult.featureName == "confidence" {
-                        // Parse confidence scores for detected objects
-                        let confidenceArray = multiArray
-                        print("Confidence array shape: \(confidenceArray.shape)")
-                        print("Confidence array count: \(confidenceArray.count)")
-                        
-                        // Get raw confidence values with improved thresholds
-                        for i in 0..<min(20, confidenceArray.count) { // Check more detections
-                            let confidence = confidenceArray[i].floatValue
-                            if confidence > 0.05 { // Lower threshold for detection consideration
-                                print("Detection \(i): confidence = \(confidence)")
-                                bestConfidence = max(bestConfidence, confidence)
-                                let objectType = self.currentModelName == "BikesModel" ? "bike" : "traffic_sign"
-                                newDetections.append((identifier: "\(objectType)_\(i)", confidence: confidence))
-                                
-                                // Higher confidence threshold with ultra-precise validation
-                                if confidence > 0.5 && !detectedTrafficSign {
-                                    detectedTrafficSign = self.evaluateUltraPreciseDetection(confidence: confidence, now: now)
-                                    if detectedTrafficSign {
-                                        print("🎯 ULTRA-PRECISE HIGH CONFIDENCE DETECTION: \(confidence) for \(self.currentModelName)")
-                                        break
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } else if let recognizedObject = result as? VNRecognizedObjectObservation {
-                // Handle object detection with recognized objects
-                print("Recognized object: \(recognizedObject.labels)")
-                for label in recognizedObject.labels {
-                    print("Label: \(label.identifier), Confidence: \(label.confidence)")
-                    newDetections.append((identifier: label.identifier, confidence: label.confidence))
-                    
-                    // Check if it matches the current challenge type
-                    let identifier = label.identifier.lowercased()
-                    var isTargetObject = false
-                    
-                    if self.currentModelName == "BikesModel" {
-                        // Look for bike-related detections
-                        if identifier.contains("bike") || identifier.contains("bicycle") || 
-                           identifier.contains("cycle") || identifier.contains("سياكل") {
-                            isTargetObject = true
-                        }
-                    } else {
-                        // Look for traffic sign detections
-                        if identifier.contains("traffic") || identifier.contains("sign") || 
-                           identifier.contains("stop") || identifier.contains("light") {
-                            isTargetObject = true
-                        }
-                    }
-                    
-                    if isTargetObject {
-                        bestConfidence = max(bestConfidence, label.confidence)
-                        // Ultra-precise threshold with enhanced validation
-                        if label.confidence > 0.75 && !detectedTrafficSign {
-                            detectedTrafficSign = self.evaluateUltraPreciseDetection(confidence: label.confidence, now: now)
-                            if detectedTrafficSign {
-                                print("🎯 \(self.currentModelName.uppercased()) ULTRA-PRECISELY DETECTED: \(label.identifier) - \(label.confidence)")
-                                break
-                            }
-                        }
-                    }
-                }
+        // Process object detection results following Apple's recommendations
+        for observation in results where observation is VNRecognizedObjectObservation {
+            guard let objectObservation = observation as? VNRecognizedObjectObservation else {
+                continue
+            }
+            
+            let objectBounds = objectObservation.boundingBox
+            
+            // Select only the label with the highest confidence as Apple recommends
+            let topLabelObservation = objectObservation.labels[0]
+            
+            let detection = (
+                identifier: topLabelObservation.identifier, 
+                confidence: topLabelObservation.confidence, 
+                boundingBox: objectBounds
+            )
+            allDetections.append(detection)
+            bestConfidence = max(bestConfidence, topLabelObservation.confidence)
+            
+            // Debug logging - show what the model detects
+            if isDebugMode && topLabelObservation.confidence > 0.3 {
+                let debugInfo = "\(topLabelObservation.identifier): \(Int(topLabelObservation.confidence * 100))%"
+                print("🔍 DEBUG: Model sees - \(debugInfo)")
             }
         }
         
-        print("=== End Object Detection Results ===")
+        // Filter detections by current model target
+        let validDetections = filterDetectionsByModel(allDetections)
+        
+        // Apply non-maximum suppression to remove overlapping detections
+        let filteredDetections = applyNonMaximumSuppression(validDetections)
+        
+        // Apply STRICT confidence threshold and size filtering
+        let confidentDetections = filteredDetections.filter { detection in
+            let area = Float(detection.boundingBox.width * detection.boundingBox.height)
+            return detection.confidence >= confidenceThreshold && area >= minimumDetectionSize
+        }
         
         DispatchQueue.main.async {
             self.lastDetectionConfidence = bestConfidence > 0.1 ? bestConfidence : nil
+            self.recentDetections = Array(filteredDetections.sorted { $0.confidence > $1.confidence }.prefix(5))
             
-            // Update recent detections for UI (keep top 5)
-            self.recentDetections = Array(newDetections.sorted { $0.confidence > $1.confidence }.prefix(5))
+            // Debug mode - show what model actually detects
+            if self.isDebugMode {
+                let topDetections = allDetections.sorted { $0.confidence > $1.confidence }.prefix(3)
+                self.debugDetections = topDetections.map { "\($0.identifier): \(Int($0.confidence * 100))%" }
+            }
             
-            if detectedTrafficSign {
-                let objectType = self.currentModelName == "BikesModel" ? "BIKE" : "TRAFFIC SIGN"
-                print("🎯 \(objectType) DETECTION SUCCESS!")
-                self.hasDetectedInThisSession = true
-                self.lastDetectionTime = now
-                self.onDetectionSuccess?()
+            // Update detection status
+            if confidentDetections.isEmpty {
+                if bestConfidence > 0.5 {
+                    self.detectionStatus = String(format: "مشكوك فيه %.0f%% - اقترب وثبت موقعك", bestConfidence * 100)
+                } else {
+                    self.detectionStatus = "جاري البحث..."
+                }
+            } else {
+                // Valid detection found - check for successful detection
+                let isValidDetection = self.validateDetection(confidentDetections, timestamp: timestamp)
+                
+                if isValidDetection {
+                    self.handleSuccessfulDetection(confidentDetections.first!, timestamp: timestamp)
+                } else {
+                    let requiredFrames = self.requiredConsistentFrames
+                    let currentFrames = self.detectionHistory.filter { $0.confidence >= 0.85 }.count
+                    self.detectionStatus = String(format: "موجود %.0f%% - يحتاج %d إطارات (%d/%d)", confidentDetections.first!.confidence * 100, requiredFrames, currentFrames, requiredFrames)
+                }
             }
         }
     }
     
-    // MARK: - Ultra-Precise Detection System
-    private func evaluateUltraPreciseDetection(confidence: Float, now: Date) -> Bool {
-        // Add current detection to history
-        detectionHistory.append((confidence: confidence, timestamp: now))
-        lastConfidenceValues.append(confidence)
+    // MARK: - YOLO Challenge-Specific Detection Filtering
+    private func filterDetectionsByModel(_ detections: [(identifier: String, confidence: Float, boundingBox: CGRect)]) -> [(identifier: String, confidence: Float, boundingBox: CGRect)] {
+        return detections.filter { detection in
+            let identifier = detection.identifier.lowercased()
+            
+            // Filter based on current challenge prompt using YOLO classes
+            if currentChallengePrompt.contains("علامات مرورية") {
+                // Traffic signs challenge - YOLO classes: stop sign, traffic light
+                let isTrafficSign = identifier == "stop sign" || 
+                                   identifier == "traffic light" ||
+                                   identifier.contains("sign") ||
+                                   identifier.contains("traffic")
+                return isTrafficSign && detection.confidence >= 0.75
+                
+            } else if currentChallengePrompt.contains("سيارات") {
+                // Cars challenge - YOLO classes: car, truck, van
+                let isCar = identifier == "car" || 
+                           identifier == "truck" || 
+                           identifier == "van" ||
+                           identifier == "automobile" ||
+                           identifier == "vehicle"
+                return isCar && detection.confidence >= 0.75
+                
+            } else if currentChallengePrompt.contains("باصات") {
+                // Bus challenge - YOLO classes: bus, truck
+                let isBus = identifier == "bus" || 
+                           identifier == "truck" ||
+                           identifier.contains("bus")
+                return isBus && detection.confidence >= 0.75
+                
+            } else if currentChallengePrompt.contains("قطط") {
+                // Cat challenge - YOLO classes: cat
+                let isCat = identifier == "cat" || 
+                           identifier.contains("cat")
+                return isCat && detection.confidence >= 0.75
+                
+            } else if currentChallengePrompt.contains("طيور") {
+                // Birds challenge - YOLO classes: bird
+                let isBird = identifier == "bird" || 
+                            identifier.contains("bird")
+                return isBird && detection.confidence >= 0.75
+                
+            } else if currentChallengePrompt.contains("سياكل") {
+                // Bicycle challenge - YOLO classes: bicycle, bike
+                let isBike = identifier == "bicycle" || 
+                            identifier == "bike" ||
+                            identifier.contains("bicycle") ||
+                            identifier.contains("bike")
+                return isBike && detection.confidence >= 0.75
+                
+            } else {
+                // Default: accept any detection with high confidence
+                return detection.confidence >= 0.80
+            }
+        }
+    }
+    
+    // MARK: - Non-Maximum Suppression
+    private func applyNonMaximumSuppression(_ detections: [(identifier: String, confidence: Float, boundingBox: CGRect)]) -> [(identifier: String, confidence: Float, boundingBox: CGRect)] {
+        guard detections.count > 1 else { return detections }
         
-        // Keep only recent confidence values (last 10 detections)
-        if lastConfidenceValues.count > 10 {
-            lastConfidenceValues.removeFirst()
+        // Sort by confidence (highest first)
+        let sortedDetections = detections.sorted { $0.confidence > $1.confidence }
+        var suppressedDetections: [(identifier: String, confidence: Float, boundingBox: CGRect)] = []
+        
+        for detection in sortedDetections {
+            var shouldSuppress = false
+            
+            for existingDetection in suppressedDetections {
+                let iou = calculateIoU(detection.boundingBox, existingDetection.boundingBox)
+                if iou > 0.5 { // IoU threshold for suppression
+                    shouldSuppress = true
+                                break
+                            }
+                        }
+            
+            if !shouldSuppress {
+                suppressedDetections.append(detection)
+            }
         }
         
-        // Clean up old detections outside the time window
-        detectionHistory = detectionHistory.filter { now.timeIntervalSince($0.timestamp) <= detectionHistoryWindow }
+        return suppressedDetections
+    }
+    
+    // Calculate Intersection over Union (IoU) for bounding boxes
+    private func calculateIoU(_ box1: CGRect, _ box2: CGRect) -> Float {
+        let intersection = box1.intersection(box2)
+        guard !intersection.isNull else { return 0.0 }
         
-        // Check for high-confidence detections
-        let recentHighConfidenceDetections = detectionHistory.filter { $0.confidence > 0.5 }
+        let intersectionArea = intersection.width * intersection.height
+        let unionArea = box1.width * box1.height + box2.width * box2.height - intersectionArea
         
-        // Calculate statistics
-        let averageConfidence = recentHighConfidenceDetections.reduce(0) { $0 + $1.confidence } / Float(max(recentHighConfidenceDetections.count, 1))
-        let confidenceVariance = calculateConfidenceVariance()
+        return Float(intersectionArea / unionArea)
+    }
+    
+    // MARK: - Advanced Detection Validation
+    private func validateDetection(_ detections: [(identifier: String, confidence: Float, boundingBox: CGRect)], timestamp: Date) -> Bool {
+        guard let bestDetection = detections.first else { return false }
         
-        print("📊 Ultra-precise detection: \(recentHighConfidenceDetections.count) recent detections, avg: \(averageConfidence), variance: \(confidenceVariance)")
+        // Add to detection history
+        let historyEntry = (confidence: bestDetection.confidence, timestamp: timestamp, boundingBox: bestDetection.boundingBox)
+        detectionHistory.append(historyEntry)
         
-        // ULTRA-STRICT CRITERIA:
-        // 1. Extremely high single detection (>0.85) with low variance OR
-        // 2. Multiple excellent detections (>=5) with high average (>0.65) and stable confidence OR
-        // 3. Many sustained detections (>=12) with good average (>0.55) and very stable confidence
+        // Clean up old detections (keep only recent ones within the window)
+        detectionHistory = detectionHistory.filter { timestamp.timeIntervalSince($0.timestamp) <= detectionHistoryWindow }
         
-        if confidence > 0.85 && confidenceVariance < 0.1 {
-            print("✅ ULTRA-HIGH confidence single detection: \(confidence), variance: \(confidenceVariance)")
-            return true
-        } else if recentHighConfidenceDetections.count >= 5 && averageConfidence > 0.65 && confidenceVariance < maxConfidenceVariance {
-            print("✅ EXCELLENT sustained detections: \(recentHighConfidenceDetections.count) detections, avg: \(averageConfidence), variance: \(confidenceVariance)")
-            return true
-        } else if recentHighConfidenceDetections.count >= 12 && averageConfidence > 0.55 && confidenceVariance < 0.1 {
-            print("✅ ULTRA-SUSTAINED stable detections: \(recentHighConfidenceDetections.count) detections, avg: \(averageConfidence), variance: \(confidenceVariance)")
-            return true
+        // STRICT Validation criteria to prevent false positives:
+        
+        // 1. Check minimum object size (prevent tiny false detections)
+        let detectionArea = Float(bestDetection.boundingBox.width * bestDetection.boundingBox.height)
+        if detectionArea < minimumDetectionSize {
+            print("❌ Detection too small: \(detectionArea) < \(minimumDetectionSize)")
+            return false
+        }
+        
+        // 2. YOLO Optimized: High confidence (>= 0.85) for quicker validation
+        if bestDetection.confidence >= 0.85 {
+            // Require fewer consistent detections for faster response
+            let recentHighConfidence = detectionHistory.filter { $0.confidence >= 0.80 && timestamp.timeIntervalSince($0.timestamp) <= 1.0 }
+            if recentHighConfidence.count >= 2 {
+                print("🎯 High confidence YOLO detection: \(bestDetection.confidence)")
+                return true
+            }
+        }
+        
+        // 3. Require consistent high confidence over multiple frames (>= 0.80 for 3+ frames)
+        let highConfidenceDetections = detectionHistory.filter { $0.confidence >= 0.80 }
+        if highConfidenceDetections.count >= requiredConsistentFrames {
+            // Check that detections are recent (within last 1.5 seconds)
+            let recentDetections = highConfidenceDetections.filter { timestamp.timeIntervalSince($0.timestamp) <= 1.5 }
+            if recentDetections.count >= requiredConsistentFrames {
+                print("🎯 Consistent YOLO detection: \(recentDetections.count) frames")
+                return true
+            }
+        }
+        
+        // 4. Stable bounding box with good confidence
+        if detectionHistory.count >= requiredConsistentFrames {
+            let recent = detectionHistory.suffix(requiredConsistentFrames)
+            let boundingBoxStability = calculateBoundingBoxStability(Array(recent))
+            let averageConfidence = recent.map { $0.confidence }.reduce(0, +) / Float(recent.count)
+            
+            if averageConfidence >= 0.82 && boundingBoxStability > 0.7 && bestDetection.confidence >= 0.83 {
+                print("🎯 Stable YOLO detection: avg=\(averageConfidence), stability=\(boundingBoxStability)")
+                return true
+            }
         }
         
         return false
     }
     
-    private func calculateConfidenceVariance() -> Float {
-        guard lastConfidenceValues.count > 1 else { return 0.0 }
+    // Calculate how stable the bounding box is (less movement = more stable)
+    private func calculateBoundingBoxStability(_ detections: [(confidence: Float, timestamp: Date, boundingBox: CGRect)]) -> Float {
+        guard detections.count >= 2 else { return 0.0 }
         
-        let mean = lastConfidenceValues.reduce(0, +) / Float(lastConfidenceValues.count)
-        let squaredDifferences = lastConfidenceValues.map { pow($0 - mean, 2) }
-        let variance = squaredDifferences.reduce(0, +) / Float(lastConfidenceValues.count - 1)
+        var totalStability: Float = 0.0
         
-        return sqrt(variance) // Return standard deviation for easier interpretation
+        for i in 1..<detections.count {
+            let currentBox = detections[i].boundingBox
+            let previousBox = detections[i-1].boundingBox
+            
+            // Calculate center point movement
+            let currentCenter = CGPoint(x: currentBox.midX, y: currentBox.midY)
+            let previousCenter = CGPoint(x: previousBox.midX, y: previousBox.midY)
+            
+            let distance = sqrt(pow(currentCenter.x - previousCenter.x, 2) + pow(currentCenter.y - previousCenter.y, 2))
+            let stability = max(0.0, 1.0 - Float(distance * 10)) // Scale distance to stability
+            
+            totalStability += stability
+        }
+        
+        return totalStability / Float(detections.count - 1)
+    }
+    
+    // MARK: - Successful Detection Handling with Final Validation
+    private func handleSuccessfulDetection(_ detection: (identifier: String, confidence: Float, boundingBox: CGRect), timestamp: Date) {
+        // FINAL VALIDATION: Double-check the detection before confirming
+        guard finalValidationCheck(detection) else {
+            print("❌ Final validation failed for \(detection.identifier)")
+            return
+        }
+        
+        hasDetectedInThisSession = true
+        lastSuccessfulDetectionTime = timestamp
+        detectionCount += 1
+        detectionStatus = String(format: "تم الاكتشاف! %.0f%% ثقة", detection.confidence * 100)
+        
+        // Provide haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.prepare()
+        impactFeedback.impactOccurred()
+        
+        // Play system sound for success
+        AudioServicesPlaySystemSound(1519) // System sound for success
+        
+        print("🎉 SUCCESSFUL DETECTION: \(detection.identifier) with \(detection.confidence) confidence")
+        
+        // Trigger success callback
+        onDetectionSuccess?()
+    }
+    
+    // MARK: - Final Validation Check for YOLO
+    private func finalValidationCheck(_ detection: (identifier: String, confidence: Float, boundingBox: CGRect)) -> Bool {
+        let identifier = detection.identifier.lowercased()
+        
+        // Final validation based on current challenge using YOLO classes
+        if currentChallengePrompt.contains("علامات مرورية") {
+            let validTerms = ["stop sign", "traffic light", "sign", "traffic"]
+            let isValid = validTerms.contains(identifier) || 
+                         identifier.contains("sign") || 
+                         identifier.contains("traffic")
+            return isValid && detection.confidence >= 0.80
+            
+        } else if currentChallengePrompt.contains("سيارات") {
+            let validTerms = ["car", "truck", "van", "automobile", "vehicle"]
+            return validTerms.contains(identifier) && detection.confidence >= 0.80
+            
+        } else if currentChallengePrompt.contains("باصات") {
+            let validTerms = ["bus", "truck"]
+            let isValid = validTerms.contains(identifier) || identifier.contains("bus")
+            return isValid && detection.confidence >= 0.80
+            
+        } else if currentChallengePrompt.contains("قطط") {
+            let validTerms = ["cat"]
+            let isValid = validTerms.contains(identifier) || identifier.contains("cat")
+            return isValid && detection.confidence >= 0.80
+            
+        } else if currentChallengePrompt.contains("طيور") {
+            let validTerms = ["bird"]
+            let isValid = validTerms.contains(identifier) || identifier.contains("bird")
+            return isValid && detection.confidence >= 0.80
+            
+        } else if currentChallengePrompt.contains("سياكل") {
+            let validTerms = ["bicycle", "bike"]
+            let isValid = validTerms.contains(identifier) || 
+                         identifier.contains("bicycle") || 
+                         identifier.contains("bike")
+            return isValid && detection.confidence >= 0.80
+            
+        } else {
+            // Default validation
+            return detection.confidence >= 0.85
+        }
     }
 }
+
+// MARK: - Advanced Detection Overlay with Bounding Boxes
+struct DetectionOverlayView: View {
+    let detections: [(identifier: String, confidence: Float, boundingBox: CGRect)]
+    let confidence: Float?
+    let status: String
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Draw bounding boxes for detected objects
+                ForEach(0..<min(detections.count, 3), id: \.self) { index in
+                    let detection = detections[index]
+                    
+                    BoundingBoxView(
+                        detection: detection,
+                        frame: geometry.frame(in: .local)
+                    )
+                }
+                
+                // Main detection feedback
+        VStack {
+                    Spacer()
+                    
+                    // Detection guidance overlay
+                    if let confidence = confidence, confidence > 0.1 {
+                        VStack(spacing: 8) {
+                            // Confidence indicator
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(confidenceColor(for: confidence))
+                                    .frame(width: 12, height: 12)
+                                
+                Text("\(Int(confidence * 100))%")
+                                    .font(.title2)
+                    .fontWeight(.bold)
+                                    .foregroundColor(confidenceColor(for: confidence))
+                            }
+                
+                            // Status text
+                            Text(status)
+                                .font(.subheadline)
+                    .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(12)
+                    } else {
+                        // Scanning indicator
+                        VStack(spacing: 8) {
+                            Image(systemName: "viewfinder")
+                                .font(.title)
+                                .foregroundColor(.white)
+                                .opacity(0.8)
+                            
+                            Text(status)
+                                .font(.subheadline)
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.black.opacity(0.6))
+                        .cornerRadius(12)
+                    }
+                    
+                    Spacer()
+                        .frame(height: 100)
+                }
+            }
+        }
+    }
+    
+    private func confidenceColor(for confidence: Float) -> Color {
+        if confidence >= 0.8 { return .green }
+        if confidence >= 0.6 { return .orange }
+        return .red
+    }
+}
+
+// MARK: - Bounding Box View
+struct BoundingBoxView: View {
+    let detection: (identifier: String, confidence: Float, boundingBox: CGRect)
+    let frame: CGRect
+    
+    var body: some View {
+        let boundingBox = detection.boundingBox
+        let confidence = detection.confidence
+        
+        // Use Apple's recommended VNImageRectForNormalizedRect approach
+        let objectBounds = VNImageRectForNormalizedRect(
+            boundingBox, 
+            Int(frame.width), 
+            Int(frame.height)
+        )
+        
+        // Convert to SwiftUI coordinates
+        let x = objectBounds.minX
+        let y = frame.height - objectBounds.maxY  // Flip Y coordinate for SwiftUI
+        let width = objectBounds.width
+        let height = objectBounds.height
+        
+        Rectangle()
+            .stroke(borderColor(for: confidence), lineWidth: 3)
+            .fill(Color.clear)
+            .frame(width: width, height: height)
+            .position(x: x + width/2, y: y + height/2)
+            .overlay(
+                // Label overlay
+                VStack {
+                    HStack {
+                        Text("\(Int(confidence * 100))%")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(borderColor(for: confidence))
+                            .cornerRadius(4)
+                        
+                        Spacer()
+                    }
+                    Spacer()
+                }
+                .frame(width: width, height: height)
+                .position(x: x + width/2, y: y + height/2)
+            )
+    }
+    
+    private func borderColor(for confidence: Float) -> Color {
+        if confidence >= 0.8 { return .green }
+        if confidence >= 0.6 { return .orange }
+        return .red
+    }
+}
+
+
