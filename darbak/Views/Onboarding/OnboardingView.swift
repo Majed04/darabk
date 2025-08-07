@@ -10,7 +10,7 @@ import Lottie
 
 struct Onboarding: View {
     @EnvironmentObject var user: User
-    @State private var navigateToChallenge = false
+    @State private var navigateToQuiz = false
     
     var body: some View {
         VStack {
@@ -42,7 +42,7 @@ struct Onboarding: View {
             
             // Action Button
             CustomButton(title: "عرفنا عليك") {
-                navigateToChallenge = false
+                navigateToQuiz = true
             }
             .padding(.horizontal, 24)
             .padding(.top, 30)
@@ -57,6 +57,9 @@ struct Onboarding: View {
             )
         )
         .ignoresSafeArea(.all, edges: .top)
+        .navigationDestination(isPresented: $navigateToQuiz){
+            QuizView().navigationBarBackButtonHidden(true)
+        }
     }
 }
 
