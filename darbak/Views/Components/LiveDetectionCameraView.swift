@@ -66,23 +66,8 @@ struct LiveDetectionCameraView: View {
                 
                 Spacer()
                 
-                // Only show success feedback when detection completes
-                if cameraManager.hasDetectedInThisSession {
-                    VStack(spacing: 8) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.green)
-                        
-                        Text(getSuccessText())
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Color.black.opacity(0.7))
-                            .cornerRadius(8)
-                    }
-                }
+                // Detection feedback is now handled only by the showingDetectionFeedback overlay
+                // This prevents duplicate success messages
                 
                 Spacer()
             }
@@ -161,7 +146,11 @@ struct LiveDetectionCameraView: View {
             return "ابحث عن طائر"
         } else if prompt.contains("سياكل") {
             return "ابحث عن دراجة"
-        } else {
+        }
+        else if prompt.contains("اشارات مرور") {
+            return "ابحث عن اشارة"
+        }
+        else {
             return "ابحث عن العنصر"
         }
     }
@@ -185,7 +174,11 @@ struct LiveDetectionCameraView: View {
             return "تم اكتشاف الطائر!"
         } else if prompt.contains("سياكل") {
             return "تم اكتشاف الدراجة!"
-        } else {
+        }
+        else if prompt.contains("اشارة مرور") {
+            return "تم اكتشاف الاشارة!"
+        }
+        else {
             return "تم اكتشاف العنصر!"
         }
     }
@@ -283,8 +276,8 @@ class LiveDetectionCameraManager: NSObject, ObservableObject {
     
     // MARK: - YOLO Model Loading with Memory Management
     func loadMLModel(modelName: String) {
-        // Always use YOLOv3 for all challenges
-        let actualModelName = "YOLOv3"
+        // Always use YOLOv3TinyInt8LUT for all challenges
+        let actualModelName = "YOLOv3TinyInt8LUT"
         
         // Prevent loading the same model twice
         guard actualModelName != currentModelName || visionModel == nil else {
@@ -301,11 +294,11 @@ class LiveDetectionCameraManager: NSObject, ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             do {
                 // Load YOLOv3 model
-                guard let modelURL = Bundle.main.url(forResource: "YOLOv3", withExtension: "mlmodelc") ??
-                                    Bundle.main.url(forResource: "YOLOv3", withExtension: "mlmodel") else {
-                    print("❌ YOLOv3 model file not found in bundle")
+                guard let modelURL = Bundle.main.url(forResource: "YOLOv3TinyInt8LUT", withExtension: "mlmodelc") ??
+                                    Bundle.main.url(forResource: "YOLOv3TinyInt8LUT", withExtension: "mlmodel") else {
+                    print("❌ YOLOv3TinyInt8LUT model file not found in bundle")
                     DispatchQueue.main.async {
-                        self?.detectionStatus = "نموذج YOLOv3 غير موجود"
+                        self?.detectionStatus = "نموذج YOLOv3TinyInt8LUT غير موجود"
                     }
                     return
                 }
@@ -327,7 +320,7 @@ class LiveDetectionCameraManager: NSObject, ObservableObject {
                 DispatchQueue.main.async {
                     self?.detectionStatus = "خطأ في تحميل نموذج YOLO"
                 }
-                print("❌ Failed to load YOLOv3 model: \(error)")
+                print("❌ Failed to load YOLOv3TinyInt8LUT model: \(error)")
             }
         }
     }
@@ -570,20 +563,47 @@ class LiveDetectionCameraManager: NSObject, ObservableObject {
         let curDeviceOrientation = UIDevice.current.orientation
         let exifOrientation: CGImagePropertyOrientation
         
+        // Get the current camera position to determine proper orientation mapping
+        let isUsingFrontCamera = currentDevice?.position == .front
+        
         switch curDeviceOrientation {
         case UIDeviceOrientation.portraitUpsideDown:  // Device oriented vertically, home button on the top
-            exifOrientation = .left
+            exifOrientation = isUsingFrontCamera ? .rightMirrored : .left
         case UIDeviceOrientation.landscapeLeft:       // Device oriented horizontally, home button on the right
-            exifOrientation = .upMirrored
+            exifOrientation = isUsingFrontCamera ? .downMirrored : .up
         case UIDeviceOrientation.landscapeRight:      // Device oriented horizontally, home button on the left
-            exifOrientation = .down
+            exifOrientation = isUsingFrontCamera ? .upMirrored : .down
         case UIDeviceOrientation.portrait:            // Device oriented vertically, home button on the bottom
-            exifOrientation = .up
+            exifOrientation = isUsingFrontCamera ? .leftMirrored : .right
         default:
-            exifOrientation = .up
+            // For unknown orientations, use the interface orientation as fallback
+            let interfaceOrientation = getInterfaceOrientation()
+            switch interfaceOrientation {
+            case .portrait:
+                exifOrientation = isUsingFrontCamera ? .leftMirrored : .right
+            case .portraitUpsideDown:
+                exifOrientation = isUsingFrontCamera ? .rightMirrored : .left
+            case .landscapeLeft:
+                exifOrientation = isUsingFrontCamera ? .downMirrored : .up
+            case .landscapeRight:
+                exifOrientation = isUsingFrontCamera ? .upMirrored : .down
+            default:
+                exifOrientation = isUsingFrontCamera ? .leftMirrored : .right
+            }
         }
         
+        // Debug logging to verify orientation mapping is working
+        print("📱 Device orientation: \(curDeviceOrientation.rawValue), Camera: \(isUsingFrontCamera ? "Front" : "Back"), EXIF: \(exifOrientation.rawValue)")
+        
         return exifOrientation
+    }
+    
+    // Helper function to get interface orientation as fallback
+    private func getInterfaceOrientation() -> UIInterfaceOrientation {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            return windowScene.interfaceOrientation
+        }
+        return .portrait
     }
     
 
@@ -594,9 +614,9 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         // Apple's Performance Recommendations:
         // 1. Don't hold on to more than one Vision request at a time
-        guard pendingRequests < maxPendingRequests else { 
+        guard pendingRequests < maxPendingRequests else {
             // Skip frame if too many requests pending (buffer overflow prevention)
-            return 
+            return
         }
         
         // 2. Skip frames for performance (process every nth frame)
@@ -670,11 +690,11 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
     }
     
     private func processDetectionResults(_ results: [VNObservation]?, timestamp: Date) {
-        guard let results = results else { 
+        guard let results = results else {
             DispatchQueue.main.async {
                 self.detectionStatus = "لا يوجد نتائج"
             }
-            return 
+            return
         }
         
         // Skip if already detected in this session
@@ -700,8 +720,8 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
             let topLabelObservation = objectObservation.labels[0]
             
             let detection = (
-                identifier: topLabelObservation.identifier, 
-                confidence: topLabelObservation.confidence, 
+                identifier: topLabelObservation.identifier,
+                confidence: topLabelObservation.confidence,
                 boundingBox: objectBounds
             )
             allDetections.append(detection)
@@ -766,7 +786,7 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
             // Filter based on current challenge prompt using YOLO classes
             if currentChallengePrompt.contains("علامات مرورية") {
                 // Traffic signs challenge - YOLO classes: stop sign, traffic light
-                let isTrafficSign = identifier == "stop sign" || 
+                let isTrafficSign = identifier == "stop sign" ||
                                    identifier == "traffic light" ||
                                    identifier.contains("sign") ||
                                    identifier.contains("traffic")
@@ -774,8 +794,8 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
                 
             } else if currentChallengePrompt.contains("سيارات") {
                 // Cars challenge - YOLO classes: car, truck, van
-                let isCar = identifier == "car" || 
-                           identifier == "truck" || 
+                let isCar = identifier == "car" ||
+                           identifier == "truck" ||
                            identifier == "van" ||
                            identifier == "automobile" ||
                            identifier == "vehicle"
@@ -783,26 +803,26 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
                 
             } else if currentChallengePrompt.contains("باصات") {
                 // Bus challenge - YOLO classes: bus, truck
-                let isBus = identifier == "bus" || 
+                let isBus = identifier == "bus" ||
                            identifier == "truck" ||
                            identifier.contains("bus")
                 return isBus && detection.confidence >= 0.75
                 
             } else if currentChallengePrompt.contains("قطط") {
                 // Cat challenge - YOLO classes: cat
-                let isCat = identifier == "cat" || 
+                let isCat = identifier == "cat" ||
                            identifier.contains("cat")
                 return isCat && detection.confidence >= 0.75
                 
             } else if currentChallengePrompt.contains("طيور") {
                 // Birds challenge - YOLO classes: bird
-                let isBird = identifier == "bird" || 
+                let isBird = identifier == "bird" ||
                             identifier.contains("bird")
                 return isBird && detection.confidence >= 0.75
                 
             } else if currentChallengePrompt.contains("سياكل") {
                 // Bicycle challenge - YOLO classes: bicycle, bike
-                let isBike = identifier == "bicycle" || 
+                let isBike = identifier == "bicycle" ||
                             identifier == "bike" ||
                             identifier.contains("bicycle") ||
                             identifier.contains("bike")
@@ -966,8 +986,8 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
         // Final validation based on current challenge using YOLO classes
         if currentChallengePrompt.contains("علامات مرورية") {
             let validTerms = ["stop sign", "traffic light", "sign", "traffic"]
-            let isValid = validTerms.contains(identifier) || 
-                         identifier.contains("sign") || 
+            let isValid = validTerms.contains(identifier) ||
+                         identifier.contains("sign") ||
                          identifier.contains("traffic")
             return isValid && detection.confidence >= 0.80
             
@@ -992,12 +1012,19 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
             
         } else if currentChallengePrompt.contains("سياكل") {
             let validTerms = ["bicycle", "bike"]
-            let isValid = validTerms.contains(identifier) || 
-                         identifier.contains("bicycle") || 
+            let isValid = validTerms.contains(identifier) ||
+                         identifier.contains("bicycle") ||
                          identifier.contains("bike")
             return isValid && detection.confidence >= 0.80
             
-        } else {
+        }
+        else if currentChallengePrompt.contains("اشارات مرور") {
+            let validTerms = ["traffic light"]
+            let isValid = validTerms.contains(identifier) ||
+                         identifier.contains("traffic light")
+            return isValid && detection.confidence >= 0.80
+            
+        }else {
             // Default validation
             return detection.confidence >= 0.85
         }
@@ -1097,8 +1124,8 @@ struct BoundingBoxView: View {
         
         // Use Apple's recommended VNImageRectForNormalizedRect approach
         let objectBounds = VNImageRectForNormalizedRect(
-            boundingBox, 
-            Int(frame.width), 
+            boundingBox,
+            Int(frame.width),
             Int(frame.height)
         )
         

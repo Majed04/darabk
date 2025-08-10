@@ -10,10 +10,11 @@ import SwiftUI
 struct Home: View {
     @ObservedObject var user: User = User()
     @EnvironmentObject var challengeProgress: ChallengeProgress
-    @State private var stepCount = 1000 // Add state for step count
+    @StateObject private var healthKitManager = HealthKitManager()
     @State private var streakDays = 7 // Add state for streak count
     @State private var randomChallenge: Challenge
     @State private var showingChallengeView = false
+    @State private var showingStreakView = false
     
     // Weekly step data (1000 to 10000 range)
     private let weeklySteps = [8500, 6200, 7800, 9100, 5400, 7200, 6800]
@@ -45,7 +46,7 @@ struct Home: View {
                 HStack(spacing: 15) {
                     HStack(spacing: 2) {
                         Button(action: {
-                            // Streak action
+                            showingStreakView = true
                         }) {
                             Text(englishFormatter.string(from: NSNumber(value: streakDays)) ?? "\(streakDays)")
                                 .font(.title2)
@@ -61,7 +62,7 @@ struct Home: View {
                     }) {
                         Image(systemName: "person.circle.fill")
                             .font(.title2)
-                            .foregroundColor(.blue)
+                            .foregroundColor(Color(hex: "#1B5299"))
                     }
                 }
                 .padding(.trailing, 20)
@@ -81,18 +82,27 @@ struct Home: View {
                                 .font(.headline)
                                 .foregroundColor(.secondary)
                             
-                            Text(englishFormatter.string(from: NSNumber(value: stepCount)) ?? "\(stepCount)")
-                                .font(.largeTitle)
-                                .bold()
-                                .foregroundColor(.blue)
+                            if healthKitManager.isAuthorized {
+                                Text(englishFormatter.string(from: NSNumber(value: healthKitManager.currentSteps)) ?? "\(healthKitManager.currentSteps)")
+                                    .font(.largeTitle)
+                                    .bold()
+                                    .foregroundColor(Color(hex: "#1B5299"))
+                                    .contentTransition(.numericText())
+                                    .animation(.easeInOut(duration: 0.5), value: healthKitManager.currentSteps)
+                            } else {
+                                Text("--")
+                                    .font(.largeTitle)
+                                    .bold()
+                                    .foregroundColor(.gray)
+                            }
                             
                             
                         }
                         
                     }
                     .padding(.horizontal, 20)
-                    
-                    Spacer()
+                
+                Spacer()
                 }
                 
                 // Text area above the button
@@ -128,7 +138,7 @@ struct Home: View {
                     .padding(20)
                     .frame(maxWidth: .infinity)
                     .frame(height: 120)
-                    .background(.blue)
+                    .background(Color(hex: "#1B5299"))
                     .cornerRadius(15)
                     .overlay(
                         Image("Star")
@@ -156,13 +166,13 @@ struct Home: View {
                                 // Progress bar
                                 VStack {
                                     RoundedRectangle(cornerRadius: 4)
-                                        .fill(Color.blue.opacity(0.3))
+                                        .fill(Color(hex: "#1B5299").opacity(0.3))
                                         .frame(width: 30, height: 100)
                                         .overlay(
                                             VStack {
                                                 Spacer()
                                                 RoundedRectangle(cornerRadius: 4)
-                                                    .fill(Color.blue)
+                                                    .fill(Color(hex: "#1B5299"))
                                                     .frame(width: 30, height: CGFloat(weeklySteps[day]) / CGFloat(maxSteps) * 100)
                                             }
                                         )
@@ -185,6 +195,13 @@ struct Home: View {
         .navigationDestination(isPresented: $showingChallengeView) {
             ChallengePage(selectedChallenge: randomChallenge)
                 .environmentObject(challengeProgress)
+        }
+        .navigationDestination(isPresented: $showingStreakView) {
+            StreakView()
+        }
+        .onAppear {
+            // Start fetching steps when view appears
+            healthKitManager.fetchTodaySteps()
         }
     }
 }
