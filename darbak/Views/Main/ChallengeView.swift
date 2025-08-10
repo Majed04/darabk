@@ -85,7 +85,7 @@ struct ChallengePage: View {
                     }
                     
                     HStack(alignment: .center){
-                        CustomButton(title: "التحدي") {
+                        CustomButton(title: "مشينا") {
                             challengeProgress.selectChallenge(index: currentIndex)
                             showingTheChallengeView = true
                         }

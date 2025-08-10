@@ -22,12 +22,13 @@ struct darbakApp: App {
                             challengeProgress.completeChallenge()
                         })
                     } else {
-                        Home()
+                        MainTabView()
                     }
                 } else {
                     Onboarding()
                 }
             }
+            .environment(\.layoutDirection, .rightToLeft)
         }
         .environmentObject(user)
         .environmentObject(challengeProgress)

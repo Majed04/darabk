@@ -68,7 +68,75 @@ class ChallengeProgress: ObservableObject {
     
     func completeChallenge() {
         isChallengeInProgress = false
+        
+        // Mark challenge as completed
+        markChallengeAsCompleted()
+        
+        // Reset daily challenge if needed
+        resetDailyChallengeIfNewDay()
+        
         saveProgress()
+    }
+    
+    private func markChallengeAsCompleted() {
+        // Add to completed challenges
+        var completedChallenges = UserDefaults.standard.array(forKey: "completedChallenges") as? [String] ?? []
+        let challengeKey = challenges[selectedChallengeIndex].prompt
+        if !completedChallenges.contains(challengeKey) {
+            completedChallenges.append(challengeKey)
+            UserDefaults.standard.set(completedChallenges, forKey: "completedChallenges")
+        }
+        
+        // Update completion count
+        let currentCount = UserDefaults.standard.integer(forKey: "completedChallengesCount")
+        UserDefaults.standard.set(currentCount + 1, forKey: "completedChallengesCount")
+        
+        // Save completion date
+        let dateKey = "challenge_completion_\(challengeKey)"
+        UserDefaults.standard.set(Date(), forKey: dateKey)
+    }
+    
+    private func resetDailyChallengeIfNewDay() {
+        let today = Calendar.current.startOfDay(for: Date())
+        let lastResetDate = UserDefaults.standard.object(forKey: "lastDailyChallengeReset") as? Date ?? Date.distantPast
+        
+        if !Calendar.current.isDate(today, inSameDayAs: lastResetDate) {
+            // Reset daily challenge
+            UserDefaults.standard.set(today, forKey: "lastDailyChallengeReset")
+            
+            // Select new daily challenge
+            let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: today) ?? 1
+            let newChallengeIndex = dayOfYear % challenges.count
+            selectChallenge(index: newChallengeIndex)
+        }
+    }
+    
+    func getChallengeHistory() -> [(challenge: Challenge, completedDate: Date)] {
+        let completedChallenges = UserDefaults.standard.array(forKey: "completedChallenges") as? [String] ?? []
+        var history: [(challenge: Challenge, completedDate: Date)] = []
+        
+        for challengePrompt in completedChallenges {
+            if let challenge = challenges.first(where: { $0.prompt == challengePrompt }) {
+                let dateKey = "challenge_completion_\(challengePrompt)"
+                if let completedDate = UserDefaults.standard.object(forKey: dateKey) as? Date {
+                    history.append((challenge: challenge, completedDate: completedDate))
+                }
+            }
+        }
+        
+        return history.sorted { $0.completedDate > $1.completedDate }
+    }
+    
+    func isChallengeCompleted(_ challenge: Challenge) -> Bool {
+        let completedChallenges = UserDefaults.standard.array(forKey: "completedChallenges") as? [String] ?? []
+        return completedChallenges.contains(challenge.prompt)
+    }
+    
+    func getTodaysChallenge() -> Challenge {
+        let today = Calendar.current.startOfDay(for: Date())
+        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: today) ?? 1
+        let challengeIndex = dayOfYear % challenges.count
+        return challenges[challengeIndex]
     }
     
     var isMaxPhotosReached: Bool {
