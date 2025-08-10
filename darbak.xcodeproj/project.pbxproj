@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A50DD342E41DC3D00F2CFE2 /* ConfettiSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 0A50DD332E41DC3D00F2CFE2 /* ConfettiSwiftUI */; };
 		1A201E502E3B6A2D003FDF0D /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 1A201E4F2E3B6A2D003FDF0D /* Lottie */; };
 /* End PBXBuildFile section */
 
@@ -40,6 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A50DD342E41DC3D00F2CFE2 /* ConfettiSwiftUI in Frameworks */,
 				1A201E502E3B6A2D003FDF0D /* Lottie in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -84,6 +86,7 @@
 			name = darbak;
 			packageProductDependencies = (
 				1A201E4F2E3B6A2D003FDF0D /* Lottie */,
+				0A50DD332E41DC3D00F2CFE2 /* ConfettiSwiftUI */,
 			);
 			productName = darbak;
 			productReference = 1AB167392E38A5340030CC22 /* darbak.app */;
@@ -115,6 +118,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				1A201E4E2E3B6A2D003FDF0D /* XCRemoteSwiftPackageReference "lottie-spm" */,
+				0A50DD322E41DC3D00F2CFE2 /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1AB1673A2E38A5340030CC22 /* Products */;
@@ -364,6 +368,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		0A50DD322E41DC3D00F2CFE2 /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/simibac/ConfettiSwiftUI.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.3;
+			};
+		};
 		1A201E4E2E3B6A2D003FDF0D /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
@@ -375,6 +387,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		0A50DD332E41DC3D00F2CFE2 /* ConfettiSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0A50DD322E41DC3D00F2CFE2 /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */;
+			productName = ConfettiSwiftUI;
+		};
 		1A201E4F2E3B6A2D003FDF0D /* Lottie */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 1A201E4E2E3B6A2D003FDF0D /* XCRemoteSwiftPackageReference "lottie-spm" */;
