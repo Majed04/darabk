@@ -15,7 +15,7 @@ struct Onboarding: View {
     var body: some View {
         VStack {
             // Main Image
-            Image("onboardingPicture")
+            Image("OnboardingWithText")
                 .resizable()
                 .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height * 0.75)
                 .clipShape(

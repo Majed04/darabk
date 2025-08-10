@@ -6,113 +6,20 @@
 //
 
 import SwiftUI
-import HealthKit
 import AVFoundation
-
-// MARK: - HealthKit Manager
-class HealthKitManager: ObservableObject {
-    private let healthStore = HKHealthStore()
-    @Published var currentSteps: Int = 0
-    @Published var isAuthorized = false
-    
-    private var stepCountQuery: HKObserverQuery?
-    
-    init() {
-        requestAuthorization()
-    }
-    
-    deinit {
-        stopObserving()
-    }
-    
-    private func requestAuthorization() {
-        guard HKHealthStore.isHealthDataAvailable() else {
-            print("HealthKit is not available on this device")
-            return
-        }
-        
-        let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
-        
-        healthStore.requestAuthorization(toShare: [], read: [stepType]) { [weak self] success, error in
-            DispatchQueue.main.async {
-                if success {
-                    self?.isAuthorized = true
-                    self?.startObserving()
-                    self?.fetchTodaySteps()
-                } else {
-                    print("HealthKit authorization failed: \(error?.localizedDescription ?? "Unknown error")")
-                }
-            }
-        }
-    }
-    
-    func fetchTodaySteps() {
-        guard isAuthorized else { return }
-        
-        let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
-        let calendar = Calendar.current
-        let startDate = calendar.startOfDay(for: Date())
-        let endDate = Date()
-        
-        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
-        
-        let query = HKStatisticsQuery(quantityType: stepType, quantitySamplePredicate: predicate, options: .cumulativeSum) { [weak self] _, result, error in
-            guard let result = result,
-                  let sum = result.sumQuantity() else {
-                print("Failed to fetch steps: \(error?.localizedDescription ?? "Unknown error")")
-                return
-            }
-            
-            let steps = Int(sum.doubleValue(for: HKUnit.count()))
-            DispatchQueue.main.async {
-                self?.currentSteps = steps
-            }
-        }
-        
-        healthStore.execute(query)
-    }
-    
-    private func startObserving() {
-        guard isAuthorized else { return }
-        
-        let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
-        
-        stepCountQuery = HKObserverQuery(sampleType: stepType, predicate: nil) { [weak self] _, _, error in
-            if let error = error {
-                print("Observer query error: \(error.localizedDescription)")
-                return
-            }
-            
-            // Fetch updated steps when new data is available
-            self?.fetchTodaySteps()
-        }
-        
-        if let query = stepCountQuery {
-            healthStore.execute(query)
-            healthStore.enableBackgroundDelivery(for: stepType, frequency: .immediate) { success, error in
-                if let error = error {
-                    print("Background delivery error: \(error.localizedDescription)")
-                }
-            }
-        }
-    }
-    
-    private func stopObserving() {
-        if let query = stepCountQuery {
-            healthStore.stop(query)
-        }
-        
-        let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
-        healthStore.disableBackgroundDelivery(for: stepType) { _, _ in }
-    }
-}
 
 struct TheChallengeView: View {
     @StateObject private var healthKitManager = HealthKitManager()
     @EnvironmentObject var challengeProgress: ChallengeProgress
-    @State private var dailyGoal = 8000
+    @ObservedObject var user: User = User()
     @State private var showingCamera = false
     @State private var cameraPermissionStatus: AVAuthorizationStatus = .notDetermined
+    @State private var showStepGateAlert = false
+    @State private var stepGateMessage: String = ""
+    
+    private var dailyGoal: Int {
+        user.goalSteps > 0 ? user.goalSteps : 10000
+    }
     
     let selectedChallengeIndex: Int?
     var onBack: (() -> Void)? = nil
@@ -129,6 +36,18 @@ struct TheChallengeView: View {
         let index = selectedChallengeIndex ?? challengeProgress.selectedChallengeIndex
         let safeIndex = min(index, allChallenges.count - 1)
         return allChallenges[safeIndex]
+    }
+    
+    private var stepsPerPhoto: Int {
+        let total = max(1, currentChallenge.totalPhotos)
+        return Int(ceil(Double(dailyGoal) / Double(total)))
+    }
+    
+    private func remainingStepsForNextPhoto() -> Int {
+        // First photo allowed immediately at challenge start
+        // Subsequent photos require stepsPerPhoto more steps each
+        let requiredSteps = stepsPerPhoto * challengeProgress.completedPhotos
+        return max(0, requiredSteps - healthKitManager.currentSteps)
     }
     
     var progressValue: Double {
@@ -232,6 +151,26 @@ struct TheChallengeView: View {
             }
             .padding(.horizontal, 40)
             
+#if DEBUG
+            // Testing override button (DEBUG only) to bypass step gating
+            Button(action: {
+                if challengeProgress.isMaxPhotosReached { return }
+                if !challengeProgress.isChallengeInProgress {
+                    challengeProgress.startChallenge()
+                }
+                if currentChallenge.hasAI {
+                    requestCameraPermissionAndShowCamera()
+                } else {
+                    openStandardCamera()
+                }
+            }) {
+                Text("تجاوز للاختبار")
+                    .font(.footnote)
+                    .foregroundColor(.orange)
+                    .padding(.top, 8)
+            }
+#endif
+            
             // Challenge description
             VStack(spacing: 5) {
                                         Text(currentChallenge.fullTitle)
@@ -257,6 +196,16 @@ struct TheChallengeView: View {
                 // Check if max photos reached
                 if challengeProgress.isMaxPhotosReached {
                     return // Do nothing if limit reached
+                }
+                
+                // Step-based gating: split daily goal over number of photos
+                let remaining = remainingStepsForNextPhoto()
+                if remaining > 0 {
+                    let threshold = stepsPerPhoto * challengeProgress.completedPhotos
+                    let thresholdText = numberFormatter.string(from: NSNumber(value: threshold)) ?? "\(threshold)"
+                    stepGateMessage = "تقدر تلتقط الصورة القادمة اذا وصلت  \(thresholdText) خطوة."
+                    showStepGateAlert = true
+                    return
                 }
                 
                 // Start challenge if not already started
@@ -308,7 +257,7 @@ struct TheChallengeView: View {
         .onAppear {
             checkCameraPermission()
             // Reset progress if challenge has changed
-            if let selectedIndex = selectedChallengeIndex, 
+            if let selectedIndex = selectedChallengeIndex,
                selectedIndex != challengeProgress.selectedChallengeIndex {
                 challengeProgress.selectChallenge(index: selectedIndex)
             }
@@ -323,6 +272,13 @@ struct TheChallengeView: View {
                     }
                 )
             }
+        }
+        .alert(isPresented: $showStepGateAlert) {
+            Alert(
+                title: Text("توك بدري"),
+                message: Text(stepGateMessage),
+                dismissButton: .default(Text("طيب"))
+            )
         }
     }
     
