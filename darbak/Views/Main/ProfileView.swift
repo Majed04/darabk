@@ -56,8 +56,8 @@ struct PersonalProfileView: View {
             VStack(alignment: .leading, spacing: 16) {
                 CustomTextField(label: "هدفك:", value: $user.goalSteps)
                 CustomTextField(label: "عمرك:", value: $user.age)
-                CustomTextField1(label: "وزنك:", value: $user.weight)
-                CustomTextField1(label: "طولك:", value: $user.height)
+                CustomTextField(label: "وزنك:", value: $user.weight)
+                CustomTextField(label: "طولك:", value: $user.height)
                 CustomTextField(label:  "ساعات نومك:", value: $user.sleepingHours)
               
             }
@@ -115,42 +115,6 @@ struct CustomTextField: View {
     }
 }
 
-struct CustomTextField1: View {
-    var label: String
-    @Binding var value: Double
-    @State private var isEditing = false
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.system(size: 16))
-                .foregroundColor(.black)
-            
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                
-                HStack {
-                    TextField("", value: $value, formatter: NumberFormatter())
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity)
-                        .disabled(!isEditing)
-                    
-                    Button(action: {
-                        withAnimation {
-                            isEditing.toggle()
-                        }
-                    }) {
-                        Image(systemName: "pencil")
-                            .foregroundColor(isEditing ? .blue : .gray)
-                    }
-                }
-                .padding(.horizontal)
-                .frame(height: 50)
-            }
-        }
-    }
-}
 
 
 #Preview {
