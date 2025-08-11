@@ -92,17 +92,17 @@ struct StreakView: View {
                             Spacer()
                             
                             Button(action: {
-                                // Previous week logic
+                                // Previous week logic (right arrow in RTL)
                             }) {
-                                Image(systemName: "chevron.left")
+                                Image(systemName: "chevron.right")
                                     .font(DesignSystem.Typography.title3)
                                     .foregroundColor(DesignSystem.Colors.primary)
                             }
                             
                             Button(action: {
-                                // Next week logic  
+                                // Next week logic (left arrow in RTL)
                             }) {
-                                Image(systemName: "chevron.right")
+                                Image(systemName: "chevron.left")
                                     .font(DesignSystem.Typography.title3)
                                     .foregroundColor(DesignSystem.Colors.primary)
                             }

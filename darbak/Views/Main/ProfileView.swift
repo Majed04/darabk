@@ -331,7 +331,7 @@ struct ProfileMenuItem: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 
-                Image(systemName: "chevron.right")
+                Image(systemName: "chevron.left")
                     .font(DesignSystem.Typography.caption)
                     .secondaryText()
             }

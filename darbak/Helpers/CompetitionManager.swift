@@ -79,47 +79,80 @@ class CompetitionManager: NSObject, ObservableObject {
     
     // MARK: - Player Management
     func loadAvailablePlayers() {
+        #if DEBUG
+        print("🚀 CompetitionManager: Starting loadAvailablePlayers")
+        print("🔍 Game Center authenticated: \(gameCenterManager.isAuthenticated)")
+        print("🔍 Current player: \(gameCenterManager.currentPlayer?.displayName ?? "None")")
+        #endif
+        
         guard gameCenterManager.isAuthenticated else { 
             // If not authenticated, clear players and show helpful message
+            #if DEBUG
             print("❌ Cannot load friends - Game Center not authenticated")
+            #endif
             DispatchQueue.main.async {
                 self.availablePlayers = []
             }
             return 
         }
         
+        #if DEBUG
         print("🔄 Loading Game Center friends...")
+        #endif
         
         // Load friends using the Game Center manager
         gameCenterManager.loadFriends { [weak self] friends in
+            #if DEBUG
+            print("📥 CompetitionManager received friends callback with \(friends.count) friends")
+            #endif
+            
             DispatchQueue.main.async {
                 if !friends.isEmpty {
                     // Use real Game Center friends
-                    print("✅ Found \(friends.count) real Game Center friends")
+                    #if DEBUG
+                    print("✅ Setting \(friends.count) real Game Center friends as available players")
+                    for friend in friends {
+                        print("   - Friend: \(friend.displayName) (ID: \(friend.gamePlayerID))")
+                    }
+                    #endif
                     self?.availablePlayers = friends
                 } else {
-                    // Check if this is due to privacy restrictions
-                    print("ℹ️ No real friends found")
+                    // No real friends found
+                    #if DEBUG
+                    print("ℹ️ No real Game Center friends found")
+                    #endif
                     
-                    // For development/testing, still provide fake friends
-                    // In production, you might want to remove this
+                    // Use fake friends for development when Game Center isn't fully configured
                     if self?.shouldUseFakeFriendsForTesting() == true {
-                        print("⚠️ Using fake friends for testing purposes")
+                        #if DEBUG
+                        print("⚠️ Using fake friends for development (Game Center not fully configured)")
+                        #endif
                         self?.availablePlayers = self?.createFakeFriends() ?? []
                     } else {
+                        #if DEBUG
+                        print("🚫 No fake friends - keeping empty list")
+                        #endif
                         self?.availablePlayers = []
                     }
                 }
+                
+                #if DEBUG
+                print("🎯 Final available players count: \(self?.availablePlayers.count ?? 0)")
+                #endif
             }
         }
     }
     
     private func shouldUseFakeFriendsForTesting() -> Bool {
-        // Only use fake friends in debug builds or specific testing scenarios
+        // Enable fake friends when Game Center setup is incomplete
+        // This allows development to continue while Game Center is being configured
+        
+        // Check if we're getting the "not recognized by Game Center" error
+        // This indicates Game Center setup is incomplete
         #if DEBUG
-        return true
+        return true // Always use fake friends in debug while Game Center is being set up
         #else
-        return false
+        return false // In production, only use real friends
         #endif
     }
     

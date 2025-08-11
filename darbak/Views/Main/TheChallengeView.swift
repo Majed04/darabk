@@ -68,7 +68,7 @@ struct TheChallengeView: View {
                             onBack()
                         }
                     }) {
-                        Image(systemName: "chevron.left")
+                        Image(systemName: "chevron.right")
                             .font(DesignSystem.Typography.title2)
                             .foregroundColor(DesignSystem.Colors.text)
                     }
@@ -84,7 +84,7 @@ struct TheChallengeView: View {
                     
                     // Invisible button for symmetry
                     Button(action: {}) {
-                        Image(systemName: "chevron.left")
+                        Image(systemName: "chevron.right")
                             .font(DesignSystem.Typography.title2)
                             .opacity(0)
                     }

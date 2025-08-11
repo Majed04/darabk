@@ -150,7 +150,7 @@ struct HomeView: View {
                         
                         Spacer()
                         
-                        Image(systemName: "chevron.right")
+                        Image(systemName: "chevron.left")
                             .font(DesignSystem.Typography.title3)
                             .foregroundColor(DesignSystem.Colors.invertedText.opacity(0.8))
                     }
