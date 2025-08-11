@@ -1,17 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
-	<key>NSHealthShareUsageDescription</key>
-	<string>This app needs access to your step count data to track your daily activity and provide personalized fitness challenges.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>This app needs to read your health data to track your fitness progress and provide accurate step counting.</string>
-	<key>NSGKFriendListUsageDescription</key>
-	<string>This app uses Game Center to connect with friends for fitness challenges and competitions.</string>
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>healthkit</string>
-		<string>gamekit</string>
-	</array>
-</dict>
+<dict/>
 </plist>
