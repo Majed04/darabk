@@ -26,23 +26,6 @@ struct ProfileView: View {
             
             ScrollView {
             VStack(spacing: 25) {
-                // Header
-                HStack {
-                    Text("الملف الشخصي")
-                        .font(DesignSystem.Typography.largeTitle)
-                        .primaryText()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    Button(action: {
-                        showingSettings = true
-                    }) {
-                        Image(systemName: "gearshape.fill")
-                            .font(DesignSystem.Typography.title2)
-                            .foregroundColor(DesignSystem.Colors.primary)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
                 
                 // Profile Header
                 VStack(spacing: 15) {
@@ -68,6 +51,7 @@ struct ProfileView: View {
                         }
                         .offset(x: 35, y: 35)
                     }
+                    .padding(.top, 50)
                     .onTapGesture {
                         showingEditProfile = true
                     }
