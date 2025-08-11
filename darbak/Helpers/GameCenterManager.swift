@@ -372,26 +372,40 @@ class GameCenterManager: NSObject, ObservableObject {
     
     // MARK: - Friends
     func loadFriends(completion: @escaping ([GKPlayer]) -> Void = { _ in }) {
+        #if DEBUG
+        print("🚀 GameCenterManager: Starting loadFriends")
+        print("🔍 isAuthenticated: \(isAuthenticated)")
+        print("🔍 GKLocalPlayer.local.isAuthenticated: \(GKLocalPlayer.local.isAuthenticated)")
+        #endif
+        
         guard isAuthenticated else { 
+            #if DEBUG
             print("❌ Cannot load friends - not authenticated")
+            #endif
             completion([])
             return 
         }
         
+        #if DEBUG
         print("🔄 Loading Game Center friends...")
+        #endif
         
         GKLocalPlayer.local.loadFriends { [weak self] friendIdentifiers, error in
             DispatchQueue.main.async {
                 if let error = error {
+                    #if DEBUG
                     print("❌ Failed to load friend identifiers: \(error.localizedDescription)")
                     
                     // Check if this is a permission/privacy issue
                     let nsError = error as NSError
+                    print("❌ Error code: \(nsError.code), domain: \(nsError.domain)")
+                    
                     if nsError.code == 2 { // GKErrorNotAuthenticated
                         print("🔧 Game Center authentication issue detected")
                     } else if nsError.code == 5 { // GKErrorNotAuthorized
                         print("🔧 Game Center friends access denied - check privacy settings")
                     }
+                    #endif
                     
                     self?.friends = []
                     completion([])
@@ -399,33 +413,43 @@ class GameCenterManager: NSObject, ObservableObject {
                 }
                 
                 guard let friendIdentifiers = friendIdentifiers as? [String], !friendIdentifiers.isEmpty else {
+                    #if DEBUG
                     print("ℹ️ No Game Center friends found")
+                    #endif
                     self?.friends = []
                     completion([])
                     return
                 }
                 
+                #if DEBUG
                 print("✅ Found \(friendIdentifiers.count) friend identifiers, loading details...")
+                #endif
                 
                 // Load player details for all friends
                 GKPlayer.loadPlayers(forIdentifiers: friendIdentifiers) { players, error in
                     DispatchQueue.main.async {
                         if let error = error {
+                            #if DEBUG
                             print("❌ Failed to load friend details: \(error.localizedDescription)")
+                            #endif
                             self?.friends = []
                             completion([])
                             return
                         }
                         
                         if let players = players {
+                            #if DEBUG
                             print("🎉 Successfully loaded \(players.count) Game Center friends:")
                             for player in players {
                                 print("   - \(player.displayName) (ID: \(player.gamePlayerID))")
                             }
+                            #endif
                             self?.friends = players
                             completion(players)
                         } else {
+                            #if DEBUG
                             print("⚠️ Friend identifiers found but no player details loaded")
+                            #endif
                             self?.friends = []
                             completion([])
                         }
@@ -492,9 +516,32 @@ class GameCenterManager: NSObject, ObservableObject {
         }
         
         // Check entitlements
-        print("Game Center entitlement present: \(Bundle.main.object(forInfoDictionaryKey: "com.apple.developer.game-center") != nil)")
+        let hasEntitlement = Bundle.main.object(forInfoDictionaryKey: "com.apple.developer.game-center") != nil
+        print("Game Center entitlement present: \(hasEntitlement)")
+        
+        // Also check entitlements file directly
+        if let entitlementsPath = Bundle.main.path(forResource: "darbak", ofType: "entitlements") {
+            print("Entitlements file found at: \(entitlementsPath)")
+        } else {
+            print("Entitlements file not found in bundle")
+        }
         
         print("================================")
+    }
+    
+    // MARK: - Debug Friends Function
+    func debugFriendsStatus() {
+        print("=== FRIENDS DEBUG INFO ===")
+        debugGameCenterStatus()
+        
+        print("\n📱 Testing friends loading directly...")
+        loadFriends { friends in
+            print("🎯 Direct friends loading result: \(friends.count) friends")
+            for friend in friends {
+                print("   - \(friend.displayName) (ID: \(friend.gamePlayerID))")
+            }
+        }
+        print("==========================")
     }
     
     // Check if Game Center is available

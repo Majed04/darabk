@@ -84,7 +84,7 @@ struct PhotoChallengeRaceView: View {
                                     Text(selectedPlayer?.displayName ?? "اختر اللاعب")
                                         .foregroundColor(selectedPlayer == nil ? DesignSystem.Colors.secondaryText : DesignSystem.Colors.text)
                                     Spacer()
-                                    Image(systemName: "chevron.right")
+                                    Image(systemName: "chevron.left")
                                         .foregroundColor(DesignSystem.Colors.secondaryText)
                                 }
                                 .padding()
@@ -102,7 +102,7 @@ struct PhotoChallengeRaceView: View {
                                     Text(selectedChallenge?.prompt ?? "اختر التحدي")
                                         .foregroundColor(selectedChallenge == nil ? DesignSystem.Colors.secondaryText : DesignSystem.Colors.text)
                                     Spacer()
-                                    Image(systemName: "chevron.right")
+                                    Image(systemName: "chevron.left")
                                         .foregroundColor(DesignSystem.Colors.secondaryText)
                                 }
                                 .padding()
@@ -340,7 +340,9 @@ struct PhotoChallengeRaceView: View {
     }
     
     private func refreshGameCenterFriends() {
+        #if DEBUG
         print("🔄 Manually refreshing Game Center friends...")
+        #endif
         competitionManager.forceRefreshFriends()
     }
     
@@ -548,12 +550,16 @@ struct PlayerSelectionView: View {
     
     private func loadFriends() {
         isLoading = true
+        #if DEBUG
         print("🔄 PlayerSelectionView: Loading friends...")
+        #endif
         
         // Force reload Game Center friends first
         GameCenterManager.shared.loadFriends { friends in
             DispatchQueue.main.async {
+                #if DEBUG
                 print("✅ PlayerSelectionView: Received \(friends.count) friends from Game Center")
+                #endif
                 
                 // Then update the competition manager
                 competitionManager.loadAvailablePlayers()
