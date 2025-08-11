@@ -26,7 +26,12 @@ struct StreakView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
+            ZStack {
+                // Background
+                DesignSystem.Colors.background
+                    .ignoresSafeArea()
+                
+                ScrollView {
                 VStack(spacing: 25) {
                     // Header
                     HStack {
@@ -146,6 +151,7 @@ struct StreakView: View {
                     }
                     
                     Spacer(minLength: 100)
+                }
                 }
             }
         }

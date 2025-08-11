@@ -31,7 +31,12 @@ struct DataInsightsView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
+            ZStack {
+                // Background
+                DesignSystem.Colors.background
+                    .ignoresSafeArea()
+                
+                ScrollView {
                 VStack(spacing: 25) {
                     // Period Selector
                     HStack(spacing: 0) {
@@ -41,19 +46,19 @@ struct DataInsightsView: View {
                             }) {
                                 Text(period.rawValue)
                                     .font(.caption)
-                                    .foregroundColor(selectedPeriod == period ? .white : Color(hex: "#1B5299"))
+                                    .foregroundColor(selectedPeriod == period ? .white : DesignSystem.Colors.primary)
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
                                     .background(
                                         RoundedRectangle(cornerRadius: 10)
-                                            .fill(selectedPeriod == period ? Color(hex: "#1B5299") : Color.clear)
+                                            .fill(selectedPeriod == period ? DesignSystem.Colors.primary : Color.clear)
                                     )
                             }
                         }
                     }
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "#1B5299"), lineWidth: 1)
+                            .stroke(DesignSystem.Colors.primary, lineWidth: 1)
                     )
                     .padding(.horizontal, 20)
                     
@@ -77,10 +82,18 @@ struct DataInsightsView: View {
                         
                         InsightCard(
                             title: "المسافة الكلية",
-                            value: String(format: "%.1f", dataManager.totalDistance),
+                            value: String(format: "%.1f", healthKitManager.currentDistance),
                             subtitle: "كيلومتر",
                             icon: "location.fill",
                             color: .green
+                        )
+                        
+                        InsightCard(
+                            title: "السعرات المحروقة",
+                            value: String(format: "%.0f", healthKitManager.currentCalories),
+                            subtitle: "سعرة حرارية",
+                            icon: "flame.fill",
+                            color: .red
                         )
                         
                         InsightCard(
@@ -124,20 +137,30 @@ struct DataInsightsView: View {
                             .bold()
                             .padding(.horizontal, 20)
                         
-                        PersonalRecordsView()
+                        PersonalRecordsView(dataManager: dataManager, healthKitManager: healthKitManager)
                             .padding(.horizontal, 20)
                     }
                     
                     Spacer(minLength: 100)
                 }
                 .padding(.top, 20)
+                }
             }
             .navigationTitle("تحليل البيانات")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(trailing: Button("إغلاق") { dismiss() })
         }
         .onAppear {
+            print("📊 DataInsightsView appeared - setting up data manager")
             dataManager.setup(with: healthKitManager, user: user)
+            // Fetch the latest data when the view appears
+            healthKitManager.fetchAllTodayData()
+            
+            // Force a refresh of historical data
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                print("📊 Force refreshing historical data")
+                dataManager.fetchHistoricalData()
+            }
         }
     }
     
@@ -177,7 +200,7 @@ struct InsightCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
-        .background(Color(.systemGray6))
+        .background(DesignSystem.Colors.secondaryBackground)
         .cornerRadius(15)
     }
 }
@@ -200,13 +223,13 @@ struct WeeklyChartView: View {
                         // Bar
                         VStack {
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(Color(hex: "#1B5299").opacity(0.2))
+                                .fill(DesignSystem.Colors.primary.opacity(0.2))
                                 .frame(width: 30, height: 120)
                                 .overlay(
                                     VStack {
                                         Spacer()
                                         RoundedRectangle(cornerRadius: 4)
-                                            .fill(data[index] >= goal ? Color(hex: "#1B5299") : Color.gray)
+                                            .fill(data[index] >= goal ? DesignSystem.Colors.primary : Color.gray)
                                             .frame(width: 30, height: max(10, CGFloat(data[index]) / CGFloat(max(data.max() ?? goal, goal)) * 120))
                                     }
                                 )
@@ -228,7 +251,7 @@ struct WeeklyChartView: View {
             .frame(maxWidth: .infinity)
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(DesignSystem.Colors.cardBackground)
         .cornerRadius(15)
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
@@ -265,6 +288,16 @@ struct InsightSummaryCard: View {
                     value: "\(insight.daysGoalAchieved) من 7"
                 )
                 
+                InsightRow(
+                    title: "إجمالي المسافة",
+                    value: String(format: "%.1f كم", insight.totalDistance)
+                )
+                
+                InsightRow(
+                    title: "إجمالي السعرات",
+                    value: String(format: "%.0f سعرة", insight.totalCalories)
+                )
+                
                 if insight.improvementFromLastWeek != 0 {
                     HStack {
                         Text("التحسن من الأسبوع الماضي")
@@ -295,7 +328,7 @@ struct InsightSummaryCard: View {
             }
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(DesignSystem.Colors.cardBackground)
         .cornerRadius(15)
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
@@ -337,6 +370,16 @@ struct MonthlyInsightCard: View {
                     value: englishFormatter.string(from: NSNumber(value: insight.personalBest)) ?? "\(insight.personalBest)"
                 )
                 
+                InsightRow(
+                    title: "إجمالي المسافة",
+                    value: String(format: "%.1f كم", insight.totalDistance)
+                )
+                
+                InsightRow(
+                    title: "إجمالي السعرات",
+                    value: String(format: "%.0f سعرة", insight.totalCalories)
+                )
+                
                 if insight.improvementFromLastMonth != 0 {
                     HStack {
                         Text("التحسن من الشهر الماضي")
@@ -360,7 +403,7 @@ struct MonthlyInsightCard: View {
             }
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(DesignSystem.Colors.cardBackground)
         .cornerRadius(15)
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
@@ -387,38 +430,91 @@ struct InsightRow: View {
 }
 
 struct PersonalRecordsView: View {
-    private let records = [
-        ("أعلى خطوات في يوم", "15,420", "🏆"),
-        ("أطول سلسلة", "25 يوم", "🔥"),
-        ("أكبر مسافة", "12.5 كم", "📍"),
-        ("أفضل أسبوع", "98,250 خطوة", "⭐")
-    ]
+    let dataManager: DataManager
+    let healthKitManager: HealthKitManager
+    
+    private let englishFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "en")
+        return formatter
+    }()
     
     var body: some View {
         VStack(spacing: 12) {
-            ForEach(Array(records.enumerated()), id: \.offset) { index, record in
-                HStack {
-                    Text(record.2)
-                        .font(.title2)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(record.0)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Text(record.1)
-                            .font(.headline)
-                            .bold()
-                    }
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 15)
-                .padding(.vertical, 12)
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-            }
+            // Personal Best Steps
+            PersonalRecordRow(
+                title: "أعلى خطوات في يوم",
+                value: englishFormatter.string(from: NSNumber(value: max(dataManager.personalBest, healthKitManager.currentSteps))) ?? "\(max(dataManager.personalBest, healthKitManager.currentSteps))",
+                emoji: "🏆"
+            )
+            
+            // Best Distance (calculated from monthly data)
+            PersonalRecordRow(
+                title: "أكبر مسافة",
+                value: String(format: "%.1f كم", getBestDistance()),
+                emoji: "📍"
+            )
+            
+            // Best Calories (calculated from monthly data)
+            PersonalRecordRow(
+                title: "أعلى سعرات محروقة",
+                value: String(format: "%.0f سعرة", getBestCalories()),
+                emoji: "🔥"
+            )
+            
+            // Best Week Steps
+            PersonalRecordRow(
+                title: "أفضل أسبوع",
+                value: englishFormatter.string(from: NSNumber(value: getBestWeekSteps())) ?? "\(getBestWeekSteps()) خطوة",
+                emoji: "⭐"
+            )
         }
+    }
+    
+    private func getBestDistance() -> Double {
+        let monthlyBest = dataManager.monthlyHealthData.compactMap { $0.distance }.max() ?? 0.0
+        return max(monthlyBest, healthKitManager.currentDistance)
+    }
+    
+    private func getBestCalories() -> Double {
+        let monthlyBest = dataManager.monthlyHealthData.compactMap { $0.calories }.max() ?? 0.0
+        return max(monthlyBest, healthKitManager.currentCalories)
+    }
+    
+    private func getBestWeekSteps() -> Int {
+        guard let bestWeek = dataManager.monthlyInsight?.bestWeek, !bestWeek.isEmpty else {
+            return dataManager.weeklyInsight?.totalSteps ?? healthKitManager.currentSteps
+        }
+        return bestWeek.reduce(0) { $0 + $1.steps }
+    }
+}
+
+struct PersonalRecordRow: View {
+    let title: String
+    let value: String
+    let emoji: String
+    
+    var body: some View {
+        HStack {
+            Text(emoji)
+                .font(.title2)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Text(value)
+                    .font(.headline)
+                    .bold()
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 15)
+        .padding(.vertical, 12)
+        .background(DesignSystem.Colors.secondaryBackground)
+        .cornerRadius(12)
     }
 }
 
@@ -426,4 +522,5 @@ struct PersonalRecordsView: View {
     DataInsightsView()
         .environmentObject(User())
         .environmentObject(HealthKitManager())
+        .environmentObject(DataManager())
 }
