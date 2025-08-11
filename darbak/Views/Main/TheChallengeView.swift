@@ -13,6 +13,7 @@ struct TheChallengeView: View {
     @EnvironmentObject var challengeProgress: ChallengeProgress
     @ObservedObject var user: User = User()
     @State private var showingCamera = false
+    @State private var showingColorCamera = false
     @State private var cameraPermissionStatus: AVAuthorizationStatus = .notDetermined
     @State private var showStepGateAlert = false
     @State private var stepGateMessage: String = ""
@@ -170,7 +171,9 @@ struct TheChallengeView: View {
                     if !challengeProgress.isChallengeInProgress {
                         challengeProgress.startChallenge()
                     }
-                    if currentChallenge.hasAI {
+                    if currentChallenge.isColorChallenge {
+                        requestCameraPermissionAndShowColorCamera()
+                    } else if currentChallenge.hasAI {
                         requestCameraPermissionAndShowCamera()
                     } else {
                         openStandardCamera()
@@ -193,7 +196,17 @@ struct TheChallengeView: View {
                         .lineLimit(nil)
                         .fixedSize(horizontal: false, vertical: true)
                     
-                    if !currentChallenge.hasAI {
+                    if currentChallenge.isColorChallenge {
+                        HStack(spacing: DesignSystem.Spacing.xs) {
+                            Image(systemName: "paintpalette.fill")
+                                .font(DesignSystem.Typography.caption)
+                                .foregroundColor(DesignSystem.Colors.accent)
+                            
+                            Text("تحدي الألوان - وجه الكاميرا للأشياء الملونة")
+                                .font(DesignSystem.Typography.caption)
+                                .foregroundColor(DesignSystem.Colors.accent)
+                        }
+                    } else if !currentChallenge.hasAI {
                         HStack(spacing: DesignSystem.Spacing.xs) {
                             Image(systemName: "info.circle.fill")
                                 .font(DesignSystem.Typography.caption)
@@ -233,18 +246,20 @@ struct TheChallengeView: View {
                         challengeProgress.startChallenge()
                     }
                     
-                    if currentChallenge.hasAI {
+                    if currentChallenge.isColorChallenge {
+                        requestCameraPermissionAndShowColorCamera()
+                    } else if currentChallenge.hasAI {
                         requestCameraPermissionAndShowCamera()
                     } else {
                         openStandardCamera()
                     }
                 }) {
                     VStack(spacing: DesignSystem.Spacing.md) {
-                        Image(systemName: currentChallenge.hasAI ? "camera.viewfinder" : "camera")
+                        Image(systemName: getCameraIcon())
                             .font(.system(size: 50, weight: .medium))
                             .foregroundColor(challengeProgress.isMaxPhotosReached ? .gray : DesignSystem.Colors.text)
                         
-                        Text(challengeProgress.isMaxPhotosReached ? "تم إكمال التحدي" : (currentChallenge.hasAI ? "خذ صورة" : "افتح الكاميرا"))
+                        Text(getCameraButtonText())
                             .font(DesignSystem.Typography.title2)
                             .fontWeight(.medium)
                             .foregroundColor(challengeProgress.isMaxPhotosReached ? .gray : DesignSystem.Colors.text)
@@ -299,6 +314,18 @@ struct TheChallengeView: View {
                 )
             }
         }
+        .sheet(isPresented: $showingColorCamera) {
+            if currentChallenge.isColorChallenge, let targetColor = currentChallenge.targetColor {
+                ColorDetectionCameraView(
+                    isPresented: $showingColorCamera,
+                    challengeProgress: challengeProgress,
+                    onDetectionComplete: {
+                        handleDetectionComplete()
+                    },
+                    targetColor: targetColor
+                )
+            }
+        }
         .alert(isPresented: $showStepGateAlert) {
             Alert(
                 title: Text("توك بدري"),
@@ -331,6 +358,51 @@ struct TheChallengeView: View {
             break
         @unknown default:
             break
+        }
+    }
+    
+    private func requestCameraPermissionAndShowColorCamera() {
+        switch cameraPermissionStatus {
+        case .authorized:
+            showingColorCamera = true
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    self.cameraPermissionStatus = granted ? .authorized : .denied
+                    if granted {
+                        self.showingColorCamera = true
+                    }
+                }
+            }
+        case .denied, .restricted:
+            // Show alert to go to settings
+            break
+        @unknown default:
+            break
+        }
+    }
+    
+    private func getCameraIcon() -> String {
+        if challengeProgress.isMaxPhotosReached {
+            return "checkmark.circle"
+        } else if currentChallenge.isColorChallenge {
+            return "camera.filters"
+        } else if currentChallenge.hasAI {
+            return "camera.viewfinder"
+        } else {
+            return "camera"
+        }
+    }
+    
+    private func getCameraButtonText() -> String {
+        if challengeProgress.isMaxPhotosReached {
+            return "تم إكمال التحدي"
+        } else if currentChallenge.isColorChallenge {
+            return "اكتشف اللون"
+        } else if currentChallenge.hasAI {
+            return "خذ صورة"
+        } else {
+            return "افتح الكاميرا"
         }
     }
     
