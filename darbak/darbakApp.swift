@@ -6,12 +6,22 @@
 //
 
 import SwiftUI
+import GameKit
 
 @main
 struct darbakApp: App {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @StateObject var user = User()
     @StateObject var challengeProgress = ChallengeProgress()
+    
+    init() {
+        // Initialize Game Center
+        print("Initializing Game Center...")
+        // Delay authentication slightly to ensure app is fully loaded
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            GameCenterManager.shared.authenticatePlayer()
+        }
+    }
     
     var body: some Scene {
         WindowGroup {

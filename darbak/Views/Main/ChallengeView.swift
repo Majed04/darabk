@@ -41,13 +41,12 @@ struct ChallengePage: View {
                 
                 Text(challenges[currentIndex].emojis[index % challenges[currentIndex].emojis.count])
                     .font(.system(size: 60))
-                    .opacity(0.09)
+                    .opacity(0.06)
                     .rotationEffect(.degrees(Double.random(in: -15...15)))
                     .position(
                         x: xOffset + CGFloat.random(in: -20...20),
                         y: yOffset + CGFloat.random(in: -15...15)
                     )
-                    .animation(.easeInOut(duration: 0.5).delay(Double(index) * 0.01), value: currentIndex)
             }
         }
         .allowsHitTesting(false)
@@ -56,47 +55,122 @@ struct ChallengePage: View {
     var body: some View {
         NavigationView {
             ZStack {
+                // Background
+                DesignSystem.Colors.background
+                    .ignoresSafeArea()
+                
                 createEmojiBackground()
                     .ignoresSafeArea()
                 
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("صور \(challenges[currentIndex].prompt) خلال إنجازك هدف اليوم")
-                        .font(.title)
-                        .bold()
+                VStack(spacing: 20) {
+                    // Header
+                    HStack {
+                        Text("تحدي اليوم")
+                            .font(DesignSystem.Typography.largeTitle)
+                            .primaryText()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
                     
-                    Image(challenges[currentIndex].imageName)
-                        .resizable()
-                        .frame(height: 430)
-                        .cornerRadius(20)
+                    // Challenge Card
+                    VStack(spacing: 12) {
+                        // Challenge Image
+                        Rectangle()
+                            .fill(Color.clear)
+                            .frame(height: 320)
+                            .overlay(
+                                Image(challenges[currentIndex].imageName)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .cornerRadius(15)
+                            )
+                            .cornerRadius(15)
+                            .padding(.horizontal, 20)
+                        
+                        // Challenge Description
+                        VStack(spacing: 10) {
+                            Text("صور \(challenges[currentIndex].prompt) خلال إنجازك هدف اليوم")
+                                .font(DesignSystem.Typography.title3)
+                                .primaryText()
+                                .multilineTextAlignment(.center)
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.horizontal, 20)
+                            
+                            // Change Challenge Button
+                            Button(action: {
+                                var newIndex: Int
+                                repeat {
+                                    newIndex = Int.random(in: 0..<challenges.count)
+                                } while newIndex == currentIndex
+                                currentIndex = newIndex
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                        .font(DesignSystem.Typography.caption)
+                                    Text("غير التحدي")
+                                        .font(DesignSystem.Typography.caption)
+                                        .fontWeight(.medium)
+                                }
+                                .foregroundColor(DesignSystem.Colors.primary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(DesignSystem.Colors.primaryLight)
+                                .cornerRadius(DesignSystem.CornerRadius.medium)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                                        .stroke(DesignSystem.Colors.primary.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+                        }
+                    }
+                    .padding(16)
+                    .background(DesignSystem.Colors.cardBackground)
+                    .cornerRadius(DesignSystem.CornerRadius.large)
+                    .shadow(color: DesignSystem.Shadows.light, radius: 2, x: 0, y: 1)
+                    .padding(.horizontal, 20)
                     
+                    Spacer()
+                    
+                    // Start Challenge Button
                     Button(action: {
-                        var newIndex: Int
-                        repeat {
-                            newIndex = Int.random(in: 0..<challenges.count)
-                        } while newIndex == currentIndex
-                        currentIndex = newIndex
+                        challengeProgress.selectChallenge(index: currentIndex)
+                        showingTheChallengeView = true
                     }) {
                         HStack {
-                            Text("بغير تحدي اليوم")
-                            Image(systemName: "repeat")
-                                .foregroundColor(.blue)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("مشينا")
+                                    .font(DesignSystem.Typography.title3)
+                                    .foregroundColor(DesignSystem.Colors.invertedText)
+                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                
+                                HStack {
+                                    Image(systemName: "camera.fill")
+                                        .font(DesignSystem.Typography.caption)
+                                    Text("اضغط للبدء")
+                                        .font(DesignSystem.Typography.caption)
+                                }
+                                .foregroundColor(DesignSystem.Colors.invertedText.opacity(0.8))
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .font(DesignSystem.Typography.title3)
+                                .foregroundColor(DesignSystem.Colors.invertedText.opacity(0.8))
                         }
+                        .padding(20)
+                        .background(DesignSystem.Colors.primary)
+                        .cornerRadius(DesignSystem.CornerRadius.medium)
                     }
-                    
-                    HStack(alignment: .center){
-                        CustomButton(title: "مشينا") {
-                            challengeProgress.selectChallenge(index: currentIndex)
-                            showingTheChallengeView = true
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 20)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
                 }
-                .padding(.horizontal, 20)
-                .navigationBarBackButtonHidden(true)
-                .navigationTitle("تحدي اليوم")
             }
+            .navigationBarBackButtonHidden(false)
+            .navigationTitle("")
         }
         .navigationDestination(isPresented: $showingTheChallengeView) {
             TheChallengeView(selectedChallengeIndex: currentIndex) {
@@ -106,6 +180,7 @@ struct ChallengePage: View {
         }
     }
 }
+
 #Preview {
     ChallengePage()
         .environmentObject(ChallengeProgress())

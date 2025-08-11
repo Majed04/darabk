@@ -54,205 +54,231 @@ struct TheChallengeView: View {
         min(1.0, Double(healthKitManager.currentSteps) / Double(dailyGoal))
     }
     
-    private var numberFormatter: NumberFormatter {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.groupingSeparator = ","
-        return formatter
-    }
-    
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
+        ZStack {
+            // Background
+            DesignSystem.Colors.background
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Button(action: {
+                        if let onBack = onBack {
+                            onBack()
+                        }
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(DesignSystem.Typography.title2)
+                            .foregroundColor(DesignSystem.Colors.text)
+                    }
+                    
+                    Spacer()
+                    
+                    Text("التحدي")
+                        .font(DesignSystem.Typography.title)
+                        .fontWeight(.semibold)
+                        .primaryText()
+                    
+                    Spacer()
+                    
+                    // Invisible button for symmetry
+                    Button(action: {}) {
+                        Image(systemName: "chevron.left")
+                            .font(DesignSystem.Typography.title2)
+                            .opacity(0)
+                    }
+                }
+                .padding(.horizontal, DesignSystem.Spacing.xl)
+                .padding(.top, DesignSystem.Spacing.sm)
+                
+                Spacer()
+                
+                // Steps counter card
+                VStack(spacing: DesignSystem.Spacing.lg) {
+                    Text("خطواتك للحين")
+                        .font(DesignSystem.Typography.title3)
+                        .secondaryText()
+                    
+                    if healthKitManager.isAuthorized {
+                        Text(healthKitManager.currentSteps.englishFormatted)
+                            .font(DesignSystem.Typography.largeTitle)
+                            .accentText()
+                            .contentTransition(.numericText())
+                            .animation(.easeInOut(duration: 0.8), value: healthKitManager.currentSteps)
+                    } else {
+                        VStack(spacing: DesignSystem.Spacing.sm) {
+                            Text("--")
+                                .font(DesignSystem.Typography.largeTitle)
+                                .foregroundColor(.gray)
+                            
+                            Text("يرجى السماح للتطبيق بالوصول للبيانات الصحية")
+                                .font(DesignSystem.Typography.caption)
+                                .foregroundColor(DesignSystem.Colors.warning)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, DesignSystem.Spacing.xxxl)
+                            
+                            Button("تحديث الحالة") {
+                                healthKitManager.refreshAuthorizationStatus()
+                            }
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.accent)
+                            .padding(.top, DesignSystem.Spacing.xs)
+                        }
+                    }
+                }
+                .padding(DesignSystem.Spacing.xl)
+                .cardStyle()
+                .padding(.horizontal, DesignSystem.Spacing.xl)
+                
+                Spacer()
+                
+                // Progress bar card
+                VStack(alignment: .trailing, spacing: DesignSystem.Spacing.sm) {
+                    HStack {
+                        Text("الهدف اليومي")
+                            .font(DesignSystem.Typography.headline)
+                            .primaryText()
+                        
+                        Spacer()
+                        
+                        Text(dailyGoal.englishFormatted)
+                            .font(DesignSystem.Typography.title3)
+                            .accentText()
+                    }
+                    
+                    // Progress bar
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
+                            .frame(height: 12)
+                            .foregroundColor(DesignSystem.Colors.secondaryBackground)
+                        
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
+                            .frame(width: max(0, (UIScreen.main.bounds.width - 80) * progressValue), height: 12)
+                            .foregroundColor(DesignSystem.Colors.primary)
+                            .animation(.easeInOut(duration: 0.5), value: progressValue)
+                    }
+                }
+                .padding(DesignSystem.Spacing.xl)
+                .cardStyle()
+                .padding(.horizontal, DesignSystem.Spacing.xl)
+                
+#if DEBUG
+                // Testing override button (DEBUG only) to bypass step gating
                 Button(action: {
-                    if let onBack = onBack {
-                        onBack()
+                    if challengeProgress.isMaxPhotosReached { return }
+                    if !challengeProgress.isChallengeInProgress {
+                        challengeProgress.startChallenge()
+                    }
+                    if currentChallenge.hasAI {
+                        requestCameraPermissionAndShowCamera()
+                    } else {
+                        openStandardCamera()
                     }
                 }) {
-                    Image(systemName: "chevron.left")
-                        .font(.title2)
-                        .foregroundColor(.black)
+                    Text("تجاوز للاختبار")
+                        .font(DesignSystem.Typography.footnote)
+                        .foregroundColor(DesignSystem.Colors.warning)
+                        .padding(.top, DesignSystem.Spacing.sm)
                 }
+#endif
                 
-                Spacer()
-                
-                Text("التحدي")
-                    .font(.title)
-                    .fontWeight(.semibold)
-                
-                Spacer()
-                
-                // Invisible button for symmetry
-                Button(action: {}) {
-                    Image(systemName: "chevron.left")
-                        .font(.title2)
-                        .opacity(0)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
-            
-            Spacer()
-            
-            // Steps counter
-            VStack(spacing: 5) {
-                Text("خطواتك للحين")
-                    .font(.title3)
-                    .foregroundColor(.gray)
-                
-                if healthKitManager.isAuthorized {
-                    Text(numberFormatter.string(from: NSNumber(value: healthKitManager.currentSteps)) ?? "\(healthKitManager.currentSteps)")
-                        .font(.system(size: 80, weight: .bold))
-                        .foregroundColor(.black)
-                        .contentTransition(.numericText())
-                        .animation(.easeInOut(duration: 0.8), value: healthKitManager.currentSteps)
-                } else {
-                    VStack(spacing: 8) {
-                        Text("--")
-                            .font(.system(size: 80, weight: .bold))
-                            .foregroundColor(.gray)
-                        
-                        Text("يرجى السماح للتطبيق بالوصول للبيانات الصحية")
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
+                // Challenge description card
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    Text(currentChallenge.fullTitle)
+                        .font(DesignSystem.Typography.body)
+                        .fontWeight(.medium)
+                        .primaryText()
+                        .multilineTextAlignment(.center)
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    if !currentChallenge.hasAI {
+                        HStack(spacing: DesignSystem.Spacing.xs) {
+                            Image(systemName: "info.circle.fill")
+                                .font(DesignSystem.Typography.caption)
+                                .foregroundColor(DesignSystem.Colors.warning)
+                            
+                            Text("استخدم كاميرا الهاتف العادية لهذا التحدي")
+                                .font(DesignSystem.Typography.caption)
+                                .foregroundColor(DesignSystem.Colors.warning)
+                        }
                     }
                 }
-            }
-            .padding(.top, 40)
-            
-            Spacer()
-            
-            // Progress bar
-            VStack(alignment: .trailing, spacing: 8) {
-                ZStack(alignment: .leading) {
-                    // Background bar
-                    RoundedRectangle(cornerRadius: 8)
-                        .frame(height: 20)
-                        .foregroundColor(.white)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.black, lineWidth: 2)
-                        )
+                .padding(DesignSystem.Spacing.xl)
+                .cardStyle()
+                .padding(.horizontal, DesignSystem.Spacing.xl)
+                
+                Spacer()
+                
+                // Camera button
+                Button(action: {
+                    // Check if max photos reached
+                    if challengeProgress.isMaxPhotosReached {
+                        return // Do nothing if limit reached
+                    }
                     
-                    // Progress fill
-                    RoundedRectangle(cornerRadius: 6)
-                        .frame(width: max(0, (UIScreen.main.bounds.width - 80) * progressValue - 4), height: 16)
-                        .foregroundColor(Color(hex: "1B5299"))
-                        .offset(x: 2)
-                        .animation(.easeInOut(duration: 0.5), value: progressValue)
-                }
-                
-                Text("\(dailyGoal)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
-            .padding(.horizontal, 40)
-            
-#if DEBUG
-            // Testing override button (DEBUG only) to bypass step gating
-            Button(action: {
-                if challengeProgress.isMaxPhotosReached { return }
-                if !challengeProgress.isChallengeInProgress {
-                    challengeProgress.startChallenge()
-                }
-                if currentChallenge.hasAI {
-                    requestCameraPermissionAndShowCamera()
-                } else {
-                    openStandardCamera()
-                }
-            }) {
-                Text("تجاوز للاختبار")
-                    .font(.footnote)
-                    .foregroundColor(.orange)
-                    .padding(.top, 8)
-            }
-#endif
-            
-            // Challenge description
-            VStack(spacing: 5) {
-                                        Text(currentChallenge.fullTitle)
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(nil)
-                    .fixedSize(horizontal: false, vertical: true)
-                
-                if !currentChallenge.hasAI {
-                    Text("استخدم كاميرا الهاتف العادية لهذا التحدي")
-                        .font(.caption)
-                        .foregroundColor(.orange)
-                        .multilineTextAlignment(.center)
-                        .padding(.top, 4)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 20)
-            
-            // Camera button
-            Button(action: {
-                // Check if max photos reached
-                if challengeProgress.isMaxPhotosReached {
-                    return // Do nothing if limit reached
-                }
-                
-                // Step-based gating: split daily goal over number of photos
-                let remaining = remainingStepsForNextPhoto()
-                if remaining > 0 {
-                    let threshold = stepsPerPhoto * challengeProgress.completedPhotos
-                    let thresholdText = numberFormatter.string(from: NSNumber(value: threshold)) ?? "\(threshold)"
-                    stepGateMessage = "تقدر تلتقط الصورة القادمة اذا وصلت  \(thresholdText) خطوة."
-                    showStepGateAlert = true
-                    return
-                }
-                
-                // Start challenge if not already started
-                if !challengeProgress.isChallengeInProgress {
-                    challengeProgress.startChallenge()
-                }
-                
-                if currentChallenge.hasAI {
-                    requestCameraPermissionAndShowCamera()
-                } else {
-                    openStandardCamera()
-                }
-            }) {
-                VStack(spacing: 12) {
-                    Image(systemName: currentChallenge.hasAI ? "camera.viewfinder" : "camera")
-                        .font(.system(size: 50, weight: .medium))
-                        .foregroundColor(challengeProgress.isMaxPhotosReached ? .gray : .black)
+                    // Step-based gating: split daily goal over number of photos
+                    let remaining = remainingStepsForNextPhoto()
+                    if remaining > 0 {
+                        let threshold = stepsPerPhoto * challengeProgress.completedPhotos
+                        let thresholdText = threshold.englishFormatted
+                        stepGateMessage = "تقدر تلتقط الصورة القادمة اذا وصلت  \(thresholdText) خطوة."
+                        showStepGateAlert = true
+                        return
+                    }
                     
-                    Text(challengeProgress.isMaxPhotosReached ? "تم إكمال التحدي" : (currentChallenge.hasAI ? "خذ صورة" : "افتح الكاميرا"))
-                        .font(.title2)
+                    // Start challenge if not already started
+                    if !challengeProgress.isChallengeInProgress {
+                        challengeProgress.startChallenge()
+                    }
+                    
+                    if currentChallenge.hasAI {
+                        requestCameraPermissionAndShowCamera()
+                    } else {
+                        openStandardCamera()
+                    }
+                }) {
+                    VStack(spacing: DesignSystem.Spacing.md) {
+                        Image(systemName: currentChallenge.hasAI ? "camera.viewfinder" : "camera")
+                            .font(.system(size: 50, weight: .medium))
+                            .foregroundColor(challengeProgress.isMaxPhotosReached ? .gray : DesignSystem.Colors.text)
+                        
+                        Text(challengeProgress.isMaxPhotosReached ? "تم إكمال التحدي" : (currentChallenge.hasAI ? "خذ صورة" : "افتح الكاميرا"))
+                            .font(DesignSystem.Typography.title2)
+                            .fontWeight(.medium)
+                            .foregroundColor(challengeProgress.isMaxPhotosReached ? .gray : DesignSystem.Colors.text)
+                    }
+                    .frame(width: 300, height: 150)
+                    .background(challengeProgress.isMaxPhotosReached ? Color.gray.opacity(0.1) : DesignSystem.Colors.cardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
+                            .stroke(challengeProgress.isMaxPhotosReached ? Color.gray : DesignSystem.Colors.border, lineWidth: 2.5)
+                    )
+                    .cornerRadius(DesignSystem.CornerRadius.large)
+                    .shadow(color: DesignSystem.Shadows.medium, radius: 4, x: 0, y: 2)
+                }
+                .padding(.horizontal, DesignSystem.Spacing.xl)
+                
+                Spacer()
+                
+                // Progress indicator card
+                VStack(spacing: DesignSystem.Spacing.sm) {
+                    Text("التقدم")
+                        .font(DesignSystem.Typography.headline)
+                        .secondaryText()
+                    
+                    Text("\(challengeProgress.completedPhotos.englishFormatted)/\(currentChallenge.totalPhotos.englishFormatted)")
+                        .font(DesignSystem.Typography.title2)
                         .fontWeight(.medium)
-                        .foregroundColor(challengeProgress.isMaxPhotosReached ? .gray : .black)
-                    
-                   
+                        .accentText()
                 }
-                .frame(width: 300, height: 150)
-                .background(challengeProgress.isMaxPhotosReached ? Color.gray.opacity(0.1) : (currentChallenge.hasAI ? Color.white : Color.gray.opacity(0.1)))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(challengeProgress.isMaxPhotosReached ? Color.gray : (currentChallenge.hasAI ? Color.black : Color.gray), lineWidth: 2.5)
-                )
-                .cornerRadius(12)
+                .padding(DesignSystem.Spacing.lg)
+                .cardStyle()
+                .padding(.horizontal, DesignSystem.Spacing.xl)
+                .padding(.bottom, DesignSystem.Spacing.xl)
             }
-            .padding(.horizontal, 40)
-            
-            Spacer()
-            
-            // Progress indicator
-            Text("\(challengeProgress.completedPhotos)/\(currentChallenge.totalPhotos)")
-                .font(.title2)
-                .fontWeight(.medium)
-                .foregroundColor(.black)
-                .padding(.bottom, 40)
-            
-            Spacer()
         }
-        .background(Color.white)
         .navigationBarHidden(true)
         .onAppear {
             checkCameraPermission()
@@ -311,9 +337,29 @@ struct TheChallengeView: View {
     private func handleDetectionComplete() {
         challengeProgress.incrementProgress()
         
+        // Update competition progress
+        updateCompetitionProgress()
+        
         // Check if challenge is completed
         if challengeProgress.isMaxPhotosReached {
             challengeProgress.completeChallenge()
+        }
+    }
+    
+    private func updateCompetitionProgress() {
+        let competitionManager = CompetitionManager.shared
+        let gameCenterManager = GameCenterManager.shared
+        
+        guard let currentPlayer = gameCenterManager.currentPlayer else { return }
+        
+        // Check if player is in active race
+        if let activeRace = competitionManager.getActiveRace(for: currentPlayer.gamePlayerID) {
+            competitionManager.updateRaceProgress(
+                raceId: activeRace.id.uuidString,
+                playerId: currentPlayer.gamePlayerID,
+                completedPhotos: challengeProgress.completedPhotos,
+                dailyGoalProgress: healthKitManager.currentSteps
+            )
         }
     }
     
@@ -326,7 +372,7 @@ struct TheChallengeView: View {
         
         // For now, just show an alert since we can't implement full image picker in this scope
         // In a real implementation, you would present UIImagePickerController
-                        print("Opening standard camera for \(currentChallenge.fullTitle)")
+        print("Opening standard camera for \(currentChallenge.fullTitle)")
         
         // Simulate photo taken for demo purposes
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
