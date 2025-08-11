@@ -12,24 +12,41 @@ struct DesignSystem {
     
     // MARK: - Colors
     struct Colors {
-        static let primary = Color(hex: "#1B5299")
-        static let primaryLight = Color(hex: "#1B5299").opacity(0.1)
-        static let primaryMedium = Color(hex: "#1B5299").opacity(0.3)
+        // Brighter, more vibrant primary colors
+        static let primary = Color(hex: "#3B82F6")  // Bright blue
+        static let primaryLight = Color(hex: "#3B82F6").opacity(0.15)
+        static let primaryMedium = Color(hex: "#3B82F6").opacity(0.4)
         
-        static let accent = Color.orange
-        static let success = Color.green
-        static let warning = Color.orange
-        static let error = Color.red
+        // Brighter accent colors
+        static let accent = Color(hex: "#F59E0B")    // Bright amber/orange
+        static let success = Color(hex: "#10B981")   // Bright emerald green
+        static let warning = Color(hex: "#F59E0B")   // Bright amber
+        static let error = Color(hex: "#EF4444")     // Bright red
         
-        static let background = Color(.systemBackground)
-        static let secondaryBackground = Color(.systemGray6)
-        static let cardBackground = Color(.systemBackground)
+        // Darker backgrounds for dark mode
+        static let background = Color(UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark ? 
+            UIColor(red: 0.08, green: 0.08, blue: 0.10, alpha: 1) :  // Much darker background
+            UIColor.systemBackground                                   // Light mode stays same
+        })
+        
+        static let secondaryBackground = Color(UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark ? 
+            UIColor(red: 0.2, green: 0.2, blue: 0.22, alpha: 1) :    // Lighter card background
+            UIColor.systemGray6                                        // Light mode stays same
+        })
+        
+        static let cardBackground = Color(UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark ? 
+            UIColor(red: 0.18, green: 0.18, blue: 0.2, alpha: 1) :   // Lighter card background
+            UIColor.systemBackground                                   // Light mode stays same
+        })
         
         static let text = Color.primary
         static let secondaryText = Color.secondary
         static let invertedText = Color.white
         
-        static let border = Color.gray.opacity(0.3)
+        static let border = Color.gray.opacity(0.4)  // Slightly more visible border
     }
     
     // MARK: - Typography
@@ -68,9 +85,9 @@ struct DesignSystem {
     
     // MARK: - Shadows
     struct Shadows {
-        static let light = Color.black.opacity(0.05)
-        static let medium = Color.black.opacity(0.1)
-        static let heavy = Color.black.opacity(0.2)
+        static let light = Color.black.opacity(0.08)   // Slightly more visible
+        static let medium = Color.black.opacity(0.15)  // More pronounced shadows
+        static let heavy = Color.black.opacity(0.25)   // Stronger shadows for depth
     }
 }
 

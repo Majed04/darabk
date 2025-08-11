@@ -285,15 +285,19 @@ struct HomeView: View {
     }
     
     private func setupDataTracking() {
-        healthKitManager.fetchTodaySteps()
+        healthKitManager.fetchAllTodayData()
         dataManager.fetchHistoricalData()
         streakManager.calculateCurrentStreak()
         achievementManager.updateProgress()
     }
     
     private func handleStepsUpdate(_ newSteps: Int) {
-        // Update data manager
-        dataManager.updateTodaySteps(newSteps)
+        // Update data manager with all current health data
+        dataManager.updateTodayData(
+            steps: newSteps,
+            distance: healthKitManager.currentDistance,
+            calories: healthKitManager.currentCalories
+        )
         
         // Update streak if goal achieved
         let goalAchieved = newSteps >= user.goalSteps
@@ -313,11 +317,11 @@ struct HomeView: View {
         GameCenterManager.shared.submitStreak(streakManager.currentStreak)
         
         // Check and unlock Game Center achievements
-        let totalSteps = dataManager.totalDistance * 1000 // Approximate total steps
+        let totalSteps = dataManager.monthlyHealthData.reduce(0) { $0 + $1.steps }
         GameCenterManager.shared.checkAndUnlockAchievements(
             steps: newSteps,
             streak: streakManager.currentStreak,
-            totalSteps: Int(totalSteps)
+            totalSteps: totalSteps
         )
     }
 }

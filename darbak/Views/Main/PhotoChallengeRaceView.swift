@@ -22,13 +22,9 @@ struct PhotoChallengeRaceView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Background gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [DesignSystem.Colors.primary.opacity(0.1), DesignSystem.Colors.accent.opacity(0.1)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                // Background
+                DesignSystem.Colors.background
+                    .ignoresSafeArea()
                 
                 // Check for incoming invitations and refresh races
                 .onAppear {

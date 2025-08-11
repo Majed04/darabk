@@ -19,7 +19,12 @@ struct ProfileView: View {
     @State private var showingEditProfile = false
     
     var body: some View {
-        ScrollView {
+        ZStack {
+            // Background
+            DesignSystem.Colors.background
+                .ignoresSafeArea()
+            
+            ScrollView {
             VStack(spacing: 25) {
                 // Header
                 HStack {
@@ -86,7 +91,7 @@ struct ProfileView: View {
                 .padding(.horizontal, 20)
                 
                 // Stats Cards
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 15), count: 2), spacing: 15) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 2), spacing: 15) {
                     StatsCard(
                         title: "خطواتك اليوم",
                         value: healthKitManager.currentSteps.englishFormatted,
@@ -113,6 +118,20 @@ struct ProfileView: View {
                         value: achievementManager.getCompletedChallengesCount().englishFormatted,
                         icon: "checkmark.circle.fill",
                         color: Color.purple
+                    )
+                    
+                    StatsCard(
+                        title: "المسافة اليوم",
+                        value: String(format: "%.1f كم", healthKitManager.currentDistance),
+                        icon: "location.fill",
+                        color: Color.green
+                    )
+                    
+                    StatsCard(
+                        title: "السعرات المحروقة",
+                        value: String(format: "%.0f", healthKitManager.currentCalories),
+                        icon: "flame.fill",
+                        color: Color.red
                     )
                 }
                 .padding(.horizontal, 20)
@@ -164,6 +183,7 @@ struct ProfileView: View {
                 .padding(.horizontal, 20)
                 
                 Spacer(minLength: 100)
+            }
             }
         }
         .sheet(isPresented: $showingSettings) {
