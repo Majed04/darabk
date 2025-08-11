@@ -37,16 +37,6 @@ struct MainTabView: View {
                         }
                         .tag(0)
                     
-                    // Challenges Tab
-                    ChallengeListView()
-                        .environmentObject(challengeProgress)
-                        .environmentObject(achievementManager)
-                        .tabItem {
-                            Image(systemName: "target")
-                            Text("التحديات")
-                        }
-                        .tag(1)
-                    
                     // Streak Tab
                     StreakView()
                         .environmentObject(streakManager)
@@ -57,16 +47,28 @@ struct MainTabView: View {
                             Image(systemName: "flame.fill")
                             Text("الصملة")
                         }
-                        .tag(2)
+                        .tag(1)
                     
                     // Leaderboard Tab
-                    GameCenterLeaderboardView()
+                    ComingSoonView(
+                        title: "المتصدرين",
+                        description: "ستتمكن قريباً من رؤية المتصدرين والتنافس مع أصدقائك في Game Center",
+                        icon: "trophy.fill"
+                    )
+                    .tabItem {
+                        Image(systemName: "trophy.fill")
+                        Text("المتصدرين")
+                    }
+                    .tag(2)
+                    
+                    // Competition Tab
+                    PhotoChallengeRaceView()
                         .environmentObject(user)
                         .environmentObject(healthKitManager)
                         .environmentObject(gameCenterManager)
                         .tabItem {
-                            Image(systemName: "trophy.fill")
-                            Text("المتصدرين")
+                            Image(systemName: "flag.filled.and.flag.crossed")
+                            Text("المنافسة")
                         }
                         .tag(3)
                     

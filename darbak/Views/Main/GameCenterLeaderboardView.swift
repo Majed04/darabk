@@ -8,12 +8,17 @@
 import SwiftUI
 import GameKit
 
+
+
 struct GameCenterLeaderboardView: View {
     @StateObject private var gameCenterManager = GameCenterManager.shared
     @State private var selectedLeaderboard: String = "daily_steps_leaderboard"
-    @State private var leaderboardEntries: [GKLeaderboard.Entry] = []
+    @State private var leaderboardEntries: [LeaderboardEntryProtocol] = []
     @State private var isLoading = false
     @State private var showingGameCenter = false
+    @State private var playerRank: Int?
+    @State private var totalPlayers: Int = 0
+    @State private var showingStats = false
     
     private let leaderboards = [
         ("daily_steps_leaderboard", "خطوات اليوم", "figure.walk"),
@@ -31,12 +36,22 @@ struct GameCenterLeaderboardView: View {
                     .primaryText()
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
-                Button(action: {
-                    showingGameCenter = true
-                }) {
-                    Image(systemName: "gamecontroller.fill")
-                        .font(DesignSystem.Typography.title2)
-                        .foregroundColor(DesignSystem.Colors.primary)
+                HStack(spacing: 15) {
+                    Button(action: {
+                        showingStats = true
+                    }) {
+                        Image(systemName: "chart.bar.fill")
+                            .font(DesignSystem.Typography.title2)
+                            .foregroundColor(DesignSystem.Colors.primary)
+                    }
+                    
+                    Button(action: {
+                        showingGameCenter = true
+                    }) {
+                        Image(systemName: "gamecontroller.fill")
+                            .font(DesignSystem.Typography.title2)
+                            .foregroundColor(DesignSystem.Colors.primary)
+                    }
                 }
             }
             .padding(.horizontal, 20)
@@ -110,18 +125,40 @@ struct GameCenterLeaderboardView: View {
                                 .font(.system(size: 50))
                                 .foregroundColor(DesignSystem.Colors.secondaryText)
                             
-                            Text("لا توجد بيانات بعد")
+                            Text("جاري تحميل المتصدرين...")
                                 .font(DesignSystem.Typography.title2)
                                 .secondaryText()
                             
-                            Text("ابدأ بالمشي لترى اسمك في المتصدرين!")
+                            Text("إذا لم تظهر البيانات، تأكد من أن لديك اتصال بالإنترنت وأن Game Center يعمل بشكل صحيح")
                                 .font(DesignSystem.Typography.body)
                                 .secondaryText()
                                 .multilineTextAlignment(.center)
+                                .padding(.horizontal, 20)
+                            
+                            Button("إعادة المحاولة") {
+                                loadLeaderboardData()
+                            }
+                            .font(DesignSystem.Typography.headline)
+                            .foregroundColor(DesignSystem.Colors.invertedText)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(DesignSystem.Colors.primary)
+                            .cornerRadius(DesignSystem.CornerRadius.medium)
+                            .padding(.top, 10)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(.top, 60)
                     } else {
+                        // Player Rank Card (only show if not in top 10)
+                        if let playerRank = playerRank, playerRank > 10 {
+                            PlayerRankCard(
+                                rank: playerRank,
+                                totalPlayers: totalPlayers,
+                                leaderboardName: getLeaderboardDisplayName(for: selectedLeaderboard)
+                            )
+                            .padding(.horizontal, 20)
+                        }
+                        
                         // Leaderboard Entries
                         ScrollView {
                             LazyVStack(spacing: 12) {
@@ -130,6 +167,15 @@ struct GameCenterLeaderboardView: View {
                                         entry: entry,
                                         rank: index + 1,
                                         isCurrentUser: entry.player.gamePlayerID == gameCenterManager.currentPlayer?.gamePlayerID
+                                    )
+                                }
+                                
+                                // Show "Your Ranking" section if you're in top 10
+                                if let playerRank = playerRank, playerRank <= 10 {
+                                    YourRankingSection(
+                                        rank: playerRank,
+                                        totalPlayers: totalPlayers,
+                                        leaderboardName: getLeaderboardDisplayName(for: selectedLeaderboard)
                                     )
                                 }
                             }
@@ -145,6 +191,12 @@ struct GameCenterLeaderboardView: View {
         .sheet(isPresented: $showingGameCenter) {
             GameCenterView()
         }
+        .sheet(isPresented: $showingStats) {
+            LeaderboardStatsView(
+                leaderboardID: selectedLeaderboard,
+                leaderboardName: getLeaderboardDisplayName(for: selectedLeaderboard)
+            )
+        }
         .onAppear {
             if gameCenterManager.isAuthenticated {
                 loadLeaderboardData()
@@ -159,11 +211,31 @@ struct GameCenterLeaderboardView: View {
     
     private func loadLeaderboardData() {
         isLoading = true
+        
+        // Load leaderboard entries
         gameCenterManager.loadLeaderboardEntries(for: selectedLeaderboard) { entries in
             DispatchQueue.main.async {
                 self.leaderboardEntries = entries
                 self.isLoading = false
             }
+        }
+        
+        // Load player rank and stats
+        gameCenterManager.getLeaderboardStats(for: selectedLeaderboard) { totalPlayers, rank in
+            DispatchQueue.main.async {
+                self.totalPlayers = totalPlayers
+                self.playerRank = rank
+            }
+        }
+    }
+    
+    private func getLeaderboardDisplayName(for id: String) -> String {
+        switch id {
+        case "daily_steps_leaderboard": return "خطوات اليوم"
+        case "weekly_steps_leaderboard": return "خطوات الأسبوع"
+        case "total_steps_leaderboard": return "إجمالي الخطوات"
+        case "streak_leaderboard": return "أطول سلسلة"
+        default: return "المتصدرين"
         }
     }
 }
@@ -199,7 +271,7 @@ struct LeaderboardTabButton: View {
 }
 
 struct LeaderboardEntryRow: View {
-    let entry: GKLeaderboard.Entry
+    let entry: LeaderboardEntryProtocol
     let rank: Int
     let isCurrentUser: Bool
     
@@ -287,4 +359,246 @@ struct LeaderboardEntryRow: View {
 
 #Preview {
     GameCenterLeaderboardView()
+}
+
+// MARK: - Player Rank Card
+struct PlayerRankCard: View {
+    let rank: Int
+    let totalPlayers: Int
+    let leaderboardName: String
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Image(systemName: "trophy.fill")
+                    .font(DesignSystem.Typography.title2)
+                    .foregroundColor(DesignSystem.Colors.accent)
+                
+                Text("رتبتك في \(leaderboardName)")
+                    .font(DesignSystem.Typography.headline)
+                    .primaryText()
+                
+                Spacer()
+            }
+            
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("الرتبة")
+                        .font(DesignSystem.Typography.caption)
+                        .secondaryText()
+                    
+                    Text("\(rank)")
+                        .font(DesignSystem.Typography.largeTitle)
+                        .bold()
+                        .foregroundColor(DesignSystem.Colors.primary)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("من إجمالي")
+                        .font(DesignSystem.Typography.caption)
+                        .secondaryText()
+                    
+                    Text("\(totalPlayers)")
+                        .font(DesignSystem.Typography.title2)
+                        .bold()
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                }
+            }
+            
+            // Progress bar
+            ProgressView(value: Double(totalPlayers - rank + 1), total: Double(totalPlayers))
+                .progressViewStyle(LinearProgressViewStyle(tint: DesignSystem.Colors.primary))
+        }
+        .padding(16)
+        .cardStyle()
+    }
+}
+
+// MARK: - Leaderboard Stats View
+struct LeaderboardStatsView: View {
+    let leaderboardID: String
+    let leaderboardName: String
+    @StateObject private var gameCenterManager = GameCenterManager.shared
+    @State private var stats: [String: Any] = [:]
+    @State private var isLoading = true
+    @Environment(\.presentationMode) private var presentationMode
+    
+    var body: some View {
+        NavigationView {
+            VStack {
+                if isLoading {
+                    VStack {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                        Text("جاري تحميل الإحصائيات...")
+                            .font(DesignSystem.Typography.body)
+                            .secondaryText()
+                            .padding(.top, 20)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            // Top Players Section
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("أفضل اللاعبين")
+                                    .font(DesignSystem.Typography.title2)
+                                    .bold()
+                                    .primaryText()
+                                
+                                ForEach(Array(stats["topPlayers"] as? [String] ?? []).enumerated(), id: \.offset) { index, player in
+                                    HStack {
+                                        Text("\(index + 1)")
+                                            .font(DesignSystem.Typography.headline)
+                                            .foregroundColor(rankColor(for: index + 1))
+                                            .frame(width: 30)
+                                        
+                                        Text(player)
+                                            .font(DesignSystem.Typography.body)
+                                            .primaryText()
+                                        
+                                        Spacer()
+                                    }
+                                    .padding(.vertical, 4)
+                                }
+                            }
+                            .padding()
+                            .cardStyle()
+                            
+                            // Statistics Section
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("إحصائيات \(leaderboardName)")
+                                    .font(DesignSystem.Typography.title2)
+                                    .bold()
+                                    .primaryText()
+                                
+                                StatRow(title: "إجمالي اللاعبين", value: "\(stats["totalPlayers"] as? Int ?? 0)")
+                                StatRow(title: "متوسط النقاط", value: "\(stats["averageScore"] as? Int ?? 0)")
+                                StatRow(title: "أعلى نقاط", value: "\(stats["highestScore"] as? Int ?? 0)")
+                                StatRow(title: "أدنى نقاط", value: "\(stats["lowestScore"] as? Int ?? 0)")
+                            }
+                            .padding()
+                            .cardStyle()
+                        }
+                        .padding()
+                    }
+                }
+            }
+            .navigationTitle("إحصائيات \(leaderboardName)")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(trailing: Button("إغلاق") {
+                presentationMode.wrappedValue.dismiss()
+            })
+        }
+        .onAppear {
+            loadStats()
+        }
+    }
+    
+    private func loadStats() {
+        gameCenterManager.loadLeaderboardEntries(for: leaderboardID) { entries in
+            DispatchQueue.main.async {
+                let scores = entries.map { $0.score }
+                let playerNames = entries.map { $0.player.displayName }
+                
+                self.stats = [
+                    "totalPlayers": entries.count,
+                    "averageScore": scores.isEmpty ? 0 : scores.reduce(0, +) / scores.count,
+                    "highestScore": scores.max() ?? 0,
+                    "lowestScore": scores.min() ?? 0,
+                    "topPlayers": Array(playerNames.prefix(10))
+                ]
+                
+                self.isLoading = false
+            }
+        }
+    }
+    
+    private func rankColor(for rank: Int) -> Color {
+        switch rank {
+        case 1: return .yellow
+        case 2: return .gray
+        case 3: return .orange
+        default: return DesignSystem.Colors.primary
+        }
+    }
+}
+
+// MARK: - Your Ranking Section
+struct YourRankingSection: View {
+    let rank: Int
+    let totalPlayers: Int
+    let leaderboardName: String
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Image(systemName: "star.fill")
+                    .font(DesignSystem.Typography.title2)
+                    .foregroundColor(DesignSystem.Colors.accent)
+                
+                Text("رتبتك في \(leaderboardName)")
+                    .font(DesignSystem.Typography.headline)
+                    .primaryText()
+                
+                Spacer()
+            }
+            
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("الرتبة")
+                        .font(DesignSystem.Typography.caption)
+                        .secondaryText()
+                    
+                    Text("\(rank)")
+                        .font(DesignSystem.Typography.largeTitle)
+                        .bold()
+                        .foregroundColor(DesignSystem.Colors.primary)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("من إجمالي")
+                        .font(DesignSystem.Typography.caption)
+                        .secondaryText()
+                    
+                    Text("\(totalPlayers)")
+                        .font(DesignSystem.Typography.title2)
+                        .bold()
+                        .foregroundColor(DesignSystem.Colors.secondaryText)
+                }
+            }
+            
+            // Progress bar
+            ProgressView(value: Double(totalPlayers - rank + 1), total: Double(totalPlayers))
+                .progressViewStyle(LinearProgressViewStyle(tint: DesignSystem.Colors.primary))
+        }
+        .padding(16)
+        .cardStyle()
+        .padding(.top, 20)
+    }
+}
+
+// MARK: - Stat Row
+struct StatRow: View {
+    let title: String
+    let value: String
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(DesignSystem.Typography.body)
+                .secondaryText()
+            
+            Spacer()
+            
+            Text(value)
+                .font(DesignSystem.Typography.headline)
+                .primaryText()
+        }
+        .padding(.vertical, 4)
+    }
 }

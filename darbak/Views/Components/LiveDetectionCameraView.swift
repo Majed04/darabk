@@ -23,7 +23,7 @@ struct LiveDetectionCameraView: View {
     
     var body: some View {
         ZStack {
-            // Clean camera preview with pinch gesture - no detection UI
+            // Clean camera preview with pinch gesture
             CameraPreviewView(cameraManager: cameraManager)
                 .ignoresSafeArea()
                 .scaleEffect(1.0)
@@ -39,54 +39,169 @@ struct LiveDetectionCameraView: View {
                         }
                 )
             
-            // Minimal UI overlay - only essential controls
-            VStack {
-                // Top controls only
-                HStack {
-                    Button("إلغاء") {
-                        isPresented = false
-                    }
-                    .foregroundColor(.white)
-                    .font(.headline)
-                    .padding()
-                    
-                    Spacer()
-                    
-                    // Camera switch button
-                    Button(action: {
-                        cameraManager.switchCamera()
-                    }) {
-                        Image(systemName: "camera.rotate")
-                            .font(.title2)
+            // Modern UI overlay with app design system
+            VStack(spacing: 0) {
+                // Top section with challenge title and controls
+                VStack(spacing: DesignSystem.Spacing.md) {
+                    // Challenge title header
+                    VStack(spacing: DesignSystem.Spacing.sm) {
+                        Text("التحدي الحالي")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(.white.opacity(0.8))
+                        
+                        Text(challengeProgress.challengeTitle)
+                            .font(DesignSystem.Typography.title3)
+                            .fontWeight(.bold)
                             .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .padding(.horizontal, DesignSystem.Spacing.lg)
                     }
-                    .padding()
+                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            colors: [
+                                Color.black.opacity(0.7),
+                                Color.black.opacity(0.5)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    
+                    // Top controls row
+                    HStack {
+                        // Cancel button
+                        Button(action: {
+                            isPresented = false
+                        }) {
+                            HStack(spacing: DesignSystem.Spacing.sm) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 16, weight: .semibold))
+                                Text("إلغاء")
+                                    .font(DesignSystem.Typography.headline)
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, DesignSystem.Spacing.lg)
+                            .padding(.vertical, DesignSystem.Spacing.md)
+                            .background(Color.black.opacity(0.6))
+                            .cornerRadius(DesignSystem.CornerRadius.medium)
+                        }
+                        
+                        Spacer()
+                        
+                        // Camera switch button
+                        Button(action: {
+                            cameraManager.switchCamera()
+                        }) {
+                            Image(systemName: "camera.rotate")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(width: 44, height: 44)
+                                .background(Color.black.opacity(0.6))
+                                .cornerRadius(DesignSystem.CornerRadius.medium)
+                        }
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.lg)
                 }
-                .padding(.top, 10)
                 
                 Spacer()
                 
-                // Detection feedback is now handled only by the showingDetectionFeedback overlay
-                // This prevents duplicate success messages
-                
-                Spacer()
+                // Bottom section with detection status
+                VStack(spacing: DesignSystem.Spacing.lg) {
+                    // Detection status card
+                    VStack(spacing: DesignSystem.Spacing.sm) {
+                        // Status icon
+                        Image(systemName: getStatusIcon())
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(getStatusColor())
+                            .opacity(0.9)
+                        
+                        // Status text
+                        Text(cameraManager.detectionStatus)
+                            .font(DesignSystem.Typography.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.lg)
+                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
+                            .fill(Color.black.opacity(0.7))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
+                                    .stroke(getStatusColor().opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                    .padding(.horizontal, DesignSystem.Spacing.lg)
+                    
+                    // Instructions card
+                    VStack(spacing: DesignSystem.Spacing.sm) {
+                        Text("تعليمات")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(.white.opacity(0.7))
+                        
+                        Text(getInstructionsText())
+                            .font(DesignSystem.Typography.footnote)
+                            .foregroundColor(.white.opacity(0.9))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(3)
+                    }
+                    .padding(.horizontal, DesignSystem.Spacing.lg)
+                    .padding(.vertical, DesignSystem.Spacing.md)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.medium)
+                            .fill(Color.black.opacity(0.5))
+                    )
+                    .padding(.horizontal, DesignSystem.Spacing.lg)
+                }
+                .padding(.bottom, DesignSystem.Spacing.xl)
             }
             
             // Final detection success overlay
             if showingDetectionFeedback {
-                VStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.green)
+                VStack(spacing: DesignSystem.Spacing.lg) {
+                    // Success icon with animation
+                    ZStack {
+                        Circle()
+                            .fill(DesignSystem.Colors.success)
+                            .frame(width: 100, height: 100)
+                            .scaleEffect(showingDetectionFeedback ? 1.0 : 0.5)
+                            .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showingDetectionFeedback)
+                        
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 50, weight: .bold))
+                            .foregroundColor(.white)
+                    }
                     
-                    Text(getSuccessText())
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                        .padding(.top, 16)
+                    VStack(spacing: DesignSystem.Spacing.sm) {
+                        Text("تم الاكتشاف!")
+                            .font(DesignSystem.Typography.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        
+                        Text(getSuccessText())
+                            .font(DesignSystem.Typography.subheadline)
+                            .foregroundColor(.white.opacity(0.9))
+                            .multilineTextAlignment(.center)
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black.opacity(0.8))
+                .background(
+                    LinearGradient(
+                        colors: [
+                            Color.black.opacity(0.9),
+                            Color.black.opacity(0.8)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
                 .ignoresSafeArea()
             }
         }
@@ -111,6 +226,53 @@ struct LiveDetectionCameraView: View {
         }
     }
     
+    // MARK: - Helper Functions
+    private func getStatusIcon() -> String {
+        if cameraManager.hasDetectedInThisSession {
+            return "checkmark.circle.fill"
+        } else if let confidence = cameraManager.lastDetectionConfidence, confidence > 0.5 {
+            return "eye.fill"
+        } else {
+            return "viewfinder"
+        }
+    }
+    
+    private func getStatusColor() -> Color {
+        if cameraManager.hasDetectedInThisSession {
+            return DesignSystem.Colors.success
+        } else if let confidence = cameraManager.lastDetectionConfidence {
+            if confidence >= 0.8 { return DesignSystem.Colors.success }
+            if confidence >= 0.6 { return DesignSystem.Colors.warning }
+            return DesignSystem.Colors.error
+        } else {
+            return .white
+        }
+    }
+    
+    private func getInstructionsText() -> String {
+        let challenges = ChallengesData.shared.challenges
+        let currentChallenge = challenges[challengeProgress.selectedChallengeIndex]
+        let prompt = currentChallenge.prompt
+        
+        if prompt.contains("علامات مرورية") {
+            return "وجه الكاميرا نحو اللافتات المرورية واضغط للتكبير إذا لزم الأمر"
+        } else if prompt.contains("سيارات") {
+            return "وجه الكاميرا نحو السيارات في الشارع أو موقف السيارات"
+        } else if prompt.contains("باصات") {
+            return "وجه الكاميرا نحو الباصات أو محطات النقل العام"
+        } else if prompt.contains("قطط") {
+            return "ابحث عن القطط في الشوارع أو الحدائق أو المنازل"
+        } else if prompt.contains("طيور") {
+            return "وجه الكاميرا نحو الطيور في السماء أو على الأشجار"
+        } else if prompt.contains("سياكل") {
+            return "ابحث عن الدراجات الهوائية في الشوارع أو مسارات الدراجات"
+        } else if prompt.contains("اشارات مرور") {
+            return "وجه الكاميرا نحو إشارات المرور في الشوارع"
+        } else {
+            return "وجه الكاميرا نحو العنصر المطلوب واضغط للتكبير إذا لزم الأمر"
+        }
+    }
+    
     private func handleDetectionSuccess() {
         // Gentle haptic feedback - just once
         let impactFeedback = UIImpactFeedbackGenerator(style: .light)
@@ -124,34 +286,6 @@ struct LiveDetectionCameraView: View {
             showingDetectionFeedback = false
             onDetectionComplete()
             isPresented = false
-        }
-    }
-    
-    private func getSearchText() -> String {
-        let challenges = ChallengesData.shared.challenges
-        let currentChallenge = challenges[challengeProgress.selectedChallengeIndex]
-        
-        // Extract the object type from the challenge prompt
-        let prompt = currentChallenge.prompt
-        
-        if prompt.contains("علامات مرورية") {
-            return "ابحث عن لافتة مرورية"
-        } else if prompt.contains("سيارات") {
-            return "ابحث عن سيارة"
-        } else if prompt.contains("باصات") {
-            return "ابحث عن باص"
-        } else if prompt.contains("قطط") {
-            return "ابحث عن قطة"
-        } else if prompt.contains("طيور") {
-            return "ابحث عن طائر"
-        } else if prompt.contains("سياكل") {
-            return "ابحث عن دراجة"
-        }
-        else if prompt.contains("اشارات مرور") {
-            return "ابحث عن اشارة"
-        }
-        else {
-            return "ابحث عن العنصر"
         }
     }
     

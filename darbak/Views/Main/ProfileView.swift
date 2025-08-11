@@ -153,6 +153,13 @@ struct ProfileView: View {
                         subtitle: notificationManager.isAuthorized ? "مفعل" : "غير مفعل",
                         action: { showingSettings = true }
                     )
+                    
+                    ProfileMenuItem(
+                        icon: "gamecontroller.fill",
+                        title: "Game Center",
+                        subtitle: GameCenterManager.shared.isAuthenticated ? "متصل" : "غير متصل",
+                        action: { requestGameCenterLogin() }
+                    )
                 }
                 .padding(.horizontal, 20)
                 
@@ -183,10 +190,68 @@ struct ProfileView: View {
         print("🏥 Health permission button tapped")
         
         if healthKitManager.isAuthorized {
-            // Already authorized, show alert with status
+            // Already authorized, show alert with options to refresh or go to settings
             let alert = UIAlertController(
                 title: "إذن الصحة",
                 message: "تم منح الإذن بالفعل للوصول إلى بيانات الصحة. يمكنك إدارة الأذونات من تطبيق الصحة في الإعدادات.",
+                preferredStyle: .alert
+            )
+            
+            alert.addAction(UIAlertAction(title: "تحديث الحالة", style: .default) { _ in
+                self.healthKitManager.refreshAuthorizationStatus()
+            })
+            
+            alert.addAction(UIAlertAction(title: "فتح الإعدادات", style: .default) { _ in
+                if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsUrl)
+                }
+            })
+            
+            alert.addAction(UIAlertAction(title: "حسناً", style: .cancel))
+            
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = windowScene.windows.first {
+                window.rootViewController?.present(alert, animated: true)
+            }
+        } else {
+            // Not authorized, show options to try again or refresh status
+            let alert = UIAlertController(
+                title: "إذن الصحة",
+                message: "يحتاج التطبيق للوصول إلى بيانات الخطوات لتتبع نشاطك اليومي. إذا منحت الإذن بالفعل، جرب تحديث الحالة.",
+                preferredStyle: .alert
+            )
+            
+            alert.addAction(UIAlertAction(title: "طلب الإذن", style: .default) { _ in
+                self.healthKitManager.retryAuthorization()
+            })
+            
+            alert.addAction(UIAlertAction(title: "تحديث الحالة", style: .default) { _ in
+                self.healthKitManager.refreshAuthorizationStatus()
+            })
+            
+            alert.addAction(UIAlertAction(title: "فتح الإعدادات", style: .default) { _ in
+                if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsUrl)
+                }
+            })
+            
+            alert.addAction(UIAlertAction(title: "إلغاء", style: .cancel))
+            
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = windowScene.windows.first {
+                window.rootViewController?.present(alert, animated: true)
+            }
+        }
+    }
+    
+    private func requestGameCenterLogin() {
+        print("🎮 Game Center login button tapped")
+        
+        if GameCenterManager.shared.isAuthenticated {
+            // Already authenticated, show alert with status
+            let alert = UIAlertController(
+                title: "Game Center",
+                message: "أنت متصل بالفعل بـ Game Center. يمكنك الوصول إلى المتصدرين والإنجازات.",
                 preferredStyle: .alert
             )
             alert.addAction(UIAlertAction(title: "حسناً", style: .default))
@@ -196,8 +261,8 @@ struct ProfileView: View {
                 window.rootViewController?.present(alert, animated: true)
             }
         } else {
-            // Not authorized, try to request permission
-            healthKitManager.retryAuthorization()
+            // Not authenticated, try to authenticate
+            GameCenterManager.shared.presentGameCenterLogin()
         }
     }
     

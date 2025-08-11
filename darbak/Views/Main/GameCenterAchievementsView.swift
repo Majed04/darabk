@@ -11,6 +11,9 @@ import GameKit
 struct GameCenterAchievementsView: View {
     @StateObject private var gameCenterManager = GameCenterManager.shared
     @State private var showingGameCenter = false
+    @State private var isAuthenticating = false
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
     
     var body: some View {
         VStack(spacing: 20) {
@@ -50,16 +53,56 @@ struct GameCenterAchievementsView: View {
                         .padding(.horizontal, 40)
                     
                     Button(action: {
-                        gameCenterManager.authenticatePlayer()
+                        authenticateWithGameCenter()
                     }) {
-                        Text("تسجيل الدخول")
-                            .font(DesignSystem.Typography.headline)
-                            .foregroundColor(DesignSystem.Colors.invertedText)
-                            .padding(.horizontal, 30)
-                            .padding(.vertical, 12)
-                            .background(DesignSystem.Colors.primary)
-                            .cornerRadius(DesignSystem.CornerRadius.medium)
+                        HStack {
+                            if isAuthenticating {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .foregroundColor(DesignSystem.Colors.invertedText)
+                            }
+                            Text(isAuthenticating ? "جاري التسجيل..." : "تسجيل الدخول")
+                                .font(DesignSystem.Typography.headline)
+                                .foregroundColor(DesignSystem.Colors.invertedText)
+                        }
+                        .padding(.horizontal, 30)
+                        .padding(.vertical, 12)
+                        .background(DesignSystem.Colors.primary)
+                        .cornerRadius(DesignSystem.CornerRadius.medium)
                     }
+                    .disabled(isAuthenticating)
+                    
+                    // Debug info
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("معلومات التصحيح:")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                        
+                        Text("GKLocalPlayer.isAuthenticated: \(GKLocalPlayer.local.isAuthenticated ? "نعم" : "لا")")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                        
+                        Text("GKLocalPlayer.isUnderage: \(GKLocalPlayer.local.isUnderage ? "نعم" : "لا")")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                        
+                        Text("Game Center Available: \(gameCenterManager.isGameCenterAvailable() ? "نعم" : "لا")")
+                            .font(DesignSystem.Typography.caption)
+                            .foregroundColor(DesignSystem.Colors.secondaryText)
+                        
+                        Button("تصحيح Game Center") {
+                            gameCenterManager.debugGameCenterStatus()
+                        }
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.primary)
+                        
+                        Button("اختبار Game Center View") {
+                            showingGameCenter = true
+                        }
+                        .font(DesignSystem.Typography.caption)
+                        .foregroundColor(DesignSystem.Colors.primary)
+                    }
+                    .padding(.top, 20)
                 }
                 .padding(.top, 60)
             } else {
@@ -98,6 +141,11 @@ struct GameCenterAchievementsView: View {
         .sheet(isPresented: $showingGameCenter) {
             GameCenterView(state: .achievements)
         }
+        .alert("خطأ في Game Center", isPresented: $showErrorAlert) {
+            Button("حسناً") { }
+        } message: {
+            Text(errorMessage)
+        }
         .onAppear {
             if gameCenterManager.isAuthenticated {
                 gameCenterManager.loadAchievements()
@@ -106,6 +154,34 @@ struct GameCenterAchievementsView: View {
         .onChange(of: gameCenterManager.isAuthenticated) { _, isAuthenticated in
             if isAuthenticated {
                 gameCenterManager.loadAchievements()
+            }
+        }
+    }
+    
+    private func authenticateWithGameCenter() {
+        print("=== Starting Game Center Authentication ===")
+        isAuthenticating = true
+        errorMessage = ""
+        
+        // Add a small delay to show loading state
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            print("Calling GameCenterManager.presentGameCenterLogin()")
+            self.gameCenterManager.presentGameCenterLogin()
+            
+            // Check authentication status after a delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                self.isAuthenticating = false
+                print("Authentication check completed")
+                print("GKLocalPlayer.isAuthenticated: \(GKLocalPlayer.local.isAuthenticated)")
+                print("Our isAuthenticated state: \(self.gameCenterManager.isAuthenticated)")
+                
+                if !self.gameCenterManager.isAuthenticated {
+                    self.errorMessage = "فشل في تسجيل الدخول إلى Game Center. تأكد من أن Game Center مفعل في إعدادات الجهاز."
+                    self.showErrorAlert = true
+                    print("Authentication failed - showing error alert")
+                } else {
+                    print("Authentication successful!")
+                }
             }
         }
     }
