@@ -280,27 +280,30 @@
 				CODE_SIGN_ENTITLEMENTS = darbak/darbak.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = C37RFU6XC7;
+				DEVELOPMENT_TEAM = A9335LBXRT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = darbak/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "دربك";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSCameraUsageDescription = "يحتاج هذا التطبيق للوصول للكاميرا في التحديات";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "يحتاج التطبيق إلى الوصول لبيانات خطواتك لتتبع تقدمك في التحدي اليومي";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "يحتاج التطبيق إلى الوصول لبيانات خطواتك لتتبع تقدمك في التحدي اليومي";
+				INFOPLIST_KEY_NSGKFriendListUsageDescription = "This app uses Game Center to connect with friends for fitness challenges and competitions.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app needs access to your step count data to track your daily activity and provide personalized fitness challenges.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app needs to read your health data to track your fitness progress and provide accurate step counting.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = "";
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = "healthkit gamekit";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.3;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.impact.darbak;
+				PRODUCT_BUNDLE_IDENTIFIER = com.impact.darbakkkk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -318,27 +321,30 @@
 				CODE_SIGN_ENTITLEMENTS = darbak/darbak.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = C37RFU6XC7;
+				DEVELOPMENT_TEAM = A9335LBXRT;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = darbak/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "دربك";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
 				INFOPLIST_KEY_NSCameraUsageDescription = "يحتاج هذا التطبيق للوصول للكاميرا في التحديات";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "يحتاج التطبيق إلى الوصول لبيانات خطواتك لتتبع تقدمك في التحدي اليومي";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "يحتاج التطبيق إلى الوصول لبيانات خطواتك لتتبع تقدمك في التحدي اليومي";
+				INFOPLIST_KEY_NSGKFriendListUsageDescription = "This app uses Game Center to connect with friends for fitness challenges and competitions.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app needs access to your step count data to track your daily activity and provide personalized fitness challenges.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app needs to read your health data to track your fitness progress and provide accurate step counting.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = "";
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = "healthkit gamekit";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.3;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.impact.darbak;
+				PRODUCT_BUNDLE_IDENTIFIER = com.impact.darbakkkk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
