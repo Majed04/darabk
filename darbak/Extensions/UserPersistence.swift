@@ -39,6 +39,12 @@ class ChallengeProgress: ObservableObject {
     func resetProgress() {
         completedPhotos = 0
         isChallengeInProgress = false
+        
+        // Clear polaroid photos when resetting progress (new challenge or manual reset)
+        Task { @MainActor in
+            PolaroidGalleryManager.shared.startChallengeSession()
+        }
+        
         saveProgress()
     }
     
@@ -71,6 +77,9 @@ class ChallengeProgress: ObservableObject {
         
         // Mark challenge as completed
         markChallengeAsCompleted()
+        
+        // Don't clear photos when challenge is completed - they should be preserved
+        // PolaroidGalleryManager handles photo preservation through completeChallengeSession()
         
         // Reset daily challenge if needed
         resetDailyChallengeIfNewDay()

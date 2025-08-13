@@ -105,6 +105,8 @@ struct ChallengePage: View {
                                     newIndex = Int.random(in: 0..<challenges.count)
                                 } while newIndex == currentIndex
                                 currentIndex = newIndex
+                                
+
                             }) {
                                 HStack(spacing: 6) {
                                     Image(systemName: "arrow.triangle.2.circlepath")

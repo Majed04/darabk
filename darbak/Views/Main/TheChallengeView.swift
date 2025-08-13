@@ -143,17 +143,9 @@ struct TheChallengeView: View {
                 
                 Spacer()
                 
-                Rectangle()
-                    .fill(Color.clear)
-                    .frame(height: 320)
-                    .overlay(
-                        Image(currentChallenge.imageName)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .cornerRadius(15)
-                    )
-                    .cornerRadius(15)
+                ChallengePhotosDisplay()
                     .padding(.horizontal, 20)
+                
                 
 #if DEBUG
                 // Testing override button (DEBUG only) to bypass step gating
@@ -299,8 +291,15 @@ struct TheChallengeView: View {
             if let selectedIndex = selectedChallengeIndex,
                selectedIndex != challengeProgress.selectedChallengeIndex {
                 challengeProgress.selectChallenge(index: selectedIndex)
+                // Clear photos when challenge changes
+                PolaroidGalleryManager.shared.startChallengeSession()
             }
         }
+        .onDisappear {
+            // Clear photos when challenge ends/exits
+            PolaroidGalleryManager.shared.endChallengeSession()
+        }
+
         .sheet(isPresented: $showingCamera) {
             if currentChallenge.hasAI {
                 LiveDetectionCameraView(
@@ -417,7 +416,8 @@ struct TheChallengeView: View {
         
         // Check if challenge is completed
         if challengeProgress.isMaxPhotosReached {
-            
+            // Mark photos as preserved when challenge is completed
+            PolaroidGalleryManager.shared.completeChallengeSession()
             challengeProgress.completeChallenge()
         }
     }
