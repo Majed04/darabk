@@ -403,6 +403,9 @@ class LiveDetectionCameraManager: NSObject, ObservableObject {
     private let maxPendingRequests: Int = 1  // Apple recommends queue size of 1
     private var bufferSize = CGSize.zero  // Track buffer dimensions for coordinate conversion
     
+    // MARK: - Polaroid Capture
+    private var currentPixelBuffer: CVPixelBuffer?  // Store current frame for polaroid capture
+    
     override init() {
         super.init()
         setupCaptureSession()
@@ -763,6 +766,9 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
             return
         }
         
+        // Store current pixel buffer for potential polaroid capture
+        currentPixelBuffer = pixelBuffer
+        
         // Skip if already detected in this session
         guard !hasDetectedInThisSession else { return }
         
@@ -1099,6 +1105,9 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
         detectionCount += 1
         detectionStatus = String(format: "تم الاكتشاف! %.0f%% ثقة", detection.confidence * 100)
         
+        // Capture polaroid photo
+        capturePolaroidPhoto(detection: detection)
+        
         // Provide haptic feedback
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.prepare()
@@ -1161,6 +1170,31 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
         }else {
             // Default validation
             return detection.confidence >= 0.85
+        }
+    }
+    
+    // MARK: - Polaroid Photo Capture
+    private func capturePolaroidPhoto(detection: (identifier: String, confidence: Float, boundingBox: CGRect)) {
+        guard let pixelBuffer = currentPixelBuffer else {
+            print("❌ No pixel buffer available for polaroid capture")
+            return
+        }
+        
+        // Create detection data
+        let detectionData = DetectionData(
+            objectDetection: currentChallengePrompt,
+            objectType: detection.identifier,
+            confidence: detection.confidence,
+            boundingBox: detection.boundingBox
+        )
+        
+        // Capture polaroid asynchronously
+        Task {
+            await PolaroidGalleryManager.shared.captureDetectionAsPolaroid(
+                pixelBuffer: pixelBuffer,
+                challengeType: .object,
+                detectionData: detectionData
+            )
         }
     }
 }

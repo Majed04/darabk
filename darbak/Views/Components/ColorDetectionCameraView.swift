@@ -315,6 +315,9 @@ struct ColorDetectionCameraView: View {
     private func handleDetectionSuccess() {
         detectionTimer?.invalidate()
         
+        // Capture polaroid photo
+        cameraModel.capturePolaroidPhoto(targetColor: targetColor, matchPercentage: colorMatchPercentage)
+        
         // Gentle haptic feedback
         let impactFeedback = UIImpactFeedbackGenerator(style: .light)
         impactFeedback.prepare()
@@ -338,6 +341,7 @@ class ColorDetectionCameraModel: NSObject, ObservableObject, AVCaptureVideoDataO
     private let context = CIContext()
     private var currentDevice: AVCaptureDevice?
     var targetColor: String = "green"
+    private var currentPixelBuffer: CVPixelBuffer?  // Store current frame for polaroid capture
     
     func startSession() {
         session.beginConfiguration()
@@ -412,6 +416,9 @@ class ColorDetectionCameraModel: NSObject, ObservableObject, AVCaptureVideoDataO
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
         
+        // Store current pixel buffer for potential polaroid capture
+        currentPixelBuffer = pixelBuffer
+        
         DispatchQueue.main.async {
             self.dominantColor = self.getDominantColor(from: ciImage)
         }
@@ -436,6 +443,30 @@ class ColorDetectionCameraModel: NSObject, ObservableObject, AVCaptureVideoDataO
                        green: CGFloat(bitmap[1]) / 255,
                        blue: CGFloat(bitmap[2]) / 255,
                        alpha: CGFloat(bitmap[3]) / 255)
+    }
+    
+    // MARK: - Polaroid Photo Capture
+    func capturePolaroidPhoto(targetColor: String, matchPercentage: Float) {
+        guard let pixelBuffer = currentPixelBuffer else {
+            print("❌ No pixel buffer available for polaroid capture")
+            return
+        }
+        
+        // Create detection data for color detection
+        let detectionData = DetectionData(
+            colorDetection: "تحدي الألوان",
+            targetColor: targetColor,
+            colorMatch: matchPercentage
+        )
+        
+        // Capture polaroid asynchronously
+        Task {
+            await PolaroidGalleryManager.shared.captureDetectionAsPolaroid(
+                pixelBuffer: pixelBuffer,
+                challengeType: .color,
+                detectionData: detectionData
+            )
+        }
     }
 }
 
