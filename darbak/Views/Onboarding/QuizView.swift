@@ -145,7 +145,7 @@ struct QuizView: View {
         case 1:
             return true
         case 2:
-            return user.age > 0 && user.age < 120
+            return user.age > 16 && user.age < 120
         case 3:
             return true
         case 4:

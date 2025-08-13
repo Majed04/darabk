@@ -11,12 +11,11 @@ import AVFoundation
 struct TheChallengeView: View {
     @StateObject private var healthKitManager = HealthKitManager()
     @EnvironmentObject var challengeProgress: ChallengeProgress
-    @ObservedObject var user: User = User()
+    @EnvironmentObject var user: User
     @State private var showingCamera = false
     @State private var showingColorCamera = false
     @State private var cameraPermissionStatus: AVAuthorizationStatus = .notDetermined
-    @State private var showStepGateAlert = false
-    @State private var stepGateMessage: String = ""
+    @State private var showGiveUpAlert = false
     
     private var dailyGoal: Int {
         user.goalSteps > 0 ? user.goalSteps : 10000
@@ -55,6 +54,8 @@ struct TheChallengeView: View {
         min(1.0, Double(healthKitManager.currentSteps) / Double(dailyGoal))
     }
     
+//    let disablePhotoButton = remainingStepsForNextPhoto() <= 0 || challengeProgress.completedPhotos < currentChallenge.totalPhotos
+    
     var body: some View {
         ZStack {
             // Background
@@ -65,9 +66,7 @@ struct TheChallengeView: View {
                 // Header
                 HStack {
                     Button(action: {
-                        if let onBack = onBack {
-                            onBack()
-                        }
+                        showGiveUpAlert = true;
                     }) {
                         Image(systemName: "chevron.right")
                             .font(DesignSystem.Typography.title2)
@@ -91,51 +90,12 @@ struct TheChallengeView: View {
                     }
                 }
                 .padding(.horizontal, DesignSystem.Spacing.xl)
-                .padding(.top, DesignSystem.Spacing.sm)
                 
-                Spacer()
                 
-                // Steps counter card
-                VStack(spacing: DesignSystem.Spacing.lg) {
-                    Text("خطواتك للحين")
-                        .font(DesignSystem.Typography.title3)
-                        .secondaryText()
-                    
-                    if healthKitManager.isAuthorized {
-                        Text(healthKitManager.currentSteps.englishFormatted)
-                            .font(DesignSystem.Typography.largeTitle)
-                            .accentText()
-                            .contentTransition(.numericText())
-                            .animation(.easeInOut(duration: 0.8), value: healthKitManager.currentSteps)
-                    } else {
-                        VStack(spacing: DesignSystem.Spacing.sm) {
-                            Text("--")
-                                .font(DesignSystem.Typography.largeTitle)
-                                .foregroundColor(.gray)
-                            
-                            Text("يرجى السماح للتطبيق بالوصول للبيانات الصحية")
-                                .font(DesignSystem.Typography.caption)
-                                .foregroundColor(DesignSystem.Colors.warning)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, DesignSystem.Spacing.xxxl)
-                            
-                            Button("تحديث الحالة") {
-                                healthKitManager.refreshAuthorizationStatus()
-                            }
-                            .font(DesignSystem.Typography.caption)
-                            .foregroundColor(DesignSystem.Colors.accent)
-                            .padding(.top, DesignSystem.Spacing.xs)
-                        }
-                    }
-                }
-                .padding(DesignSystem.Spacing.xl)
-                .cardStyle()
-                .padding(.horizontal, DesignSystem.Spacing.xl)
                 
-                Spacer()
                 
                 // Progress bar card
-                VStack(alignment: .trailing, spacing: DesignSystem.Spacing.sm) {
+                VStack(alignment: .trailing, spacing: DesignSystem.Spacing.md) {
                     HStack {
                         Text("الهدف اليومي")
                             .font(DesignSystem.Typography.headline)
@@ -143,26 +103,57 @@ struct TheChallengeView: View {
                         
                         Spacer()
                         
-                        Text(dailyGoal.englishFormatted)
-                            .font(DesignSystem.Typography.title3)
-                            .accentText()
+                        HStack(spacing: 4) {
+                            Text(healthKitManager.currentSteps.englishFormatted)
+                                .font(DesignSystem.Typography.title3)
+                                .accentText()
+                                .contentTransition(.numericText())
+                                .animation(.easeInOut(duration: 0.8), value: healthKitManager.currentSteps)
+                            
+                            Text("/")
+                                .font(DesignSystem.Typography.title3)
+                            
+                            Text(dailyGoal.englishFormatted)
+                                .font(DesignSystem.Typography.title3)
+                                .accentText()
+                           
+                        }
+                   
+                       
                     }
                     
-                    // Progress bar
                     ZStack(alignment: .leading) {
                         RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
                             .frame(height: 12)
                             .foregroundColor(DesignSystem.Colors.secondaryBackground)
                         
-                        RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
-                            .frame(width: max(0, (UIScreen.main.bounds.width - 80) * progressValue), height: 12)
-                            .foregroundColor(DesignSystem.Colors.primary)
-                            .animation(.easeInOut(duration: 0.5), value: progressValue)
+                        ZStack(alignment: .trailing){
+                            RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
+                                .frame(width: max(0, (UIScreen.main.bounds.width - 80) * progressValue), height: 12)
+                                .foregroundColor(DesignSystem.Colors.primary)
+                                .animation(.easeInOut(duration: 0.5), value: progressValue)
+                            Image("Star").resizable().frame(width: 50,height: 50).padding(.trailing, -15)
+                        }
                     }
                 }
                 .padding(DesignSystem.Spacing.xl)
                 .cardStyle()
                 .padding(.horizontal, DesignSystem.Spacing.xl)
+                .padding(.top, DesignSystem.Spacing.xl)
+                
+                Spacer()
+                
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(height: 320)
+                    .overlay(
+                        Image(currentChallenge.imageName)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .cornerRadius(15)
+                    )
+                    .cornerRadius(15)
+                    .padding(.horizontal, 20)
                 
 #if DEBUG
                 // Testing override button (DEBUG only) to bypass step gating
@@ -185,6 +176,7 @@ struct TheChallengeView: View {
                         .padding(.top, DesignSystem.Spacing.sm)
                 }
 #endif
+                Spacer()
                 
                 // Challenge description card
                 VStack(spacing: DesignSystem.Spacing.md) {
@@ -222,7 +214,6 @@ struct TheChallengeView: View {
                 .cardStyle()
                 .padding(.horizontal, DesignSystem.Spacing.xl)
                 
-                Spacer()
                 
                 // Camera button
                 Button(action: {
@@ -231,15 +222,7 @@ struct TheChallengeView: View {
                         return // Do nothing if limit reached
                     }
                     
-                    // Step-based gating: split daily goal over number of photos
-                    let remaining = remainingStepsForNextPhoto()
-                    if remaining > 0 {
-                        let threshold = stepsPerPhoto * challengeProgress.completedPhotos
-                        let thresholdText = threshold.englishFormatted
-                        stepGateMessage = "تقدر تلتقط الصورة القادمة اذا وصلت  \(thresholdText) خطوة."
-                        showStepGateAlert = true
-                        return
-                    }
+                    guard remainingStepsForNextPhoto() <= 0 else { return }
                     
                     // Start challenge if not already started
                     if !challengeProgress.isChallengeInProgress {
@@ -259,39 +242,54 @@ struct TheChallengeView: View {
                             .font(.system(size: 50, weight: .medium))
                             .foregroundColor(challengeProgress.isMaxPhotosReached ? .gray : DesignSystem.Colors.text)
                         
-                        Text(getCameraButtonText())
+                        if challengeProgress.isMaxPhotosReached {
+                            Text("تم إكمال التحدي")
+                                .font(DesignSystem.Typography.title2)
+                                .fontWeight(.medium)
+                                .foregroundColor(.gray)
+                        } else if remainingStepsForNextPhoto() > 0 {
+                            Text("تبقى \(remainingStepsForNextPhoto().englishFormatted) خطوة")
+                                .font(DesignSystem.Typography.title2)
+                                .fontWeight(.medium)
+                                .foregroundColor(.gray)
+                        } else {
+                            Text(getCameraButtonText())
+                                .font(DesignSystem.Typography.title2)
+                                .fontWeight(.medium)
+                                .foregroundColor(DesignSystem.Colors.text)
+                        }
+                        
+                        
+                        Text("\(challengeProgress.completedPhotos.englishFormatted)/\(currentChallenge.totalPhotos.englishFormatted)")
                             .font(DesignSystem.Typography.title2)
                             .fontWeight(.medium)
-                            .foregroundColor(challengeProgress.isMaxPhotosReached ? .gray : DesignSystem.Colors.text)
+                            .accentText()
                     }
                     .frame(width: 300, height: 150)
-                    .background(challengeProgress.isMaxPhotosReached ? Color.gray.opacity(0.1) : DesignSystem.Colors.cardBackground)
+                    .background(
+                        (challengeProgress.isMaxPhotosReached || remainingStepsForNextPhoto() > 0)
+                            ? Color.gray.opacity(0.1)
+                            : DesignSystem.Colors.cardBackground
+                    )
                     .overlay(
                         RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.large)
-                            .stroke(challengeProgress.isMaxPhotosReached ? Color.gray : DesignSystem.Colors.border, lineWidth: 2.5)
+                            .stroke(
+                                (challengeProgress.isMaxPhotosReached || remainingStepsForNextPhoto() > 0)
+                                    ? Color.gray
+                                    : DesignSystem.Colors.border,
+                                lineWidth: 2.5
+                            )
                     )
                     .cornerRadius(DesignSystem.CornerRadius.large)
                     .shadow(color: DesignSystem.Shadows.medium, radius: 4, x: 0, y: 2)
                 }
+                .disabled(challengeProgress.isMaxPhotosReached || remainingStepsForNextPhoto() > 0)
                 .padding(.horizontal, DesignSystem.Spacing.xl)
+                .padding(.top, DesignSystem.Spacing.xxl)
                 
-                Spacer()
+//                Spacer()
                 
-                // Progress indicator card
-                VStack(spacing: DesignSystem.Spacing.sm) {
-                    Text("التقدم")
-                        .font(DesignSystem.Typography.headline)
-                        .secondaryText()
-                    
-                    Text("\(challengeProgress.completedPhotos.englishFormatted)/\(currentChallenge.totalPhotos.englishFormatted)")
-                        .font(DesignSystem.Typography.title2)
-                        .fontWeight(.medium)
-                        .accentText()
-                }
-                .padding(DesignSystem.Spacing.lg)
-                .cardStyle()
-                .padding(.horizontal, DesignSystem.Spacing.xl)
-                .padding(.bottom, DesignSystem.Spacing.xl)
+                
             }
         }
         .navigationBarHidden(true)
@@ -326,11 +324,16 @@ struct TheChallengeView: View {
                 )
             }
         }
-        .alert(isPresented: $showStepGateAlert) {
+        .alert(isPresented: $showGiveUpAlert) {
             Alert(
                 title: Text("توك بدري"),
-                message: Text(stepGateMessage),
-                dismissButton: .default(Text("طيب"))
+                message: Text("خلاص ما عاد أقدر"),
+                primaryButton: .default(Text("متأكد"), action: {
+                    if let onBack = onBack {
+                        onBack()
+                    }
+                }),
+                secondaryButton: .default(Text("لا"))
             )
         }
     }
@@ -414,6 +417,7 @@ struct TheChallengeView: View {
         
         // Check if challenge is completed
         if challengeProgress.isMaxPhotosReached {
+            
             challengeProgress.completeChallenge()
         }
     }
@@ -456,4 +460,5 @@ struct TheChallengeView: View {
 #Preview {
     TheChallengeView()
         .environmentObject(ChallengeProgress())
+        .environmentObject(User())
 }
