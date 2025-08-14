@@ -403,6 +403,9 @@ class LiveDetectionCameraManager: NSObject, ObservableObject {
     private let maxPendingRequests: Int = 1  // Apple recommends queue size of 1
     private var bufferSize = CGSize.zero  // Track buffer dimensions for coordinate conversion
     
+    // MARK: - Polaroid Capture
+    private var currentPixelBuffer: CVPixelBuffer?  // Store current frame for polaroid capture
+    
     override init() {
         super.init()
         setupCaptureSession()
@@ -763,6 +766,9 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
             return
         }
         
+        // Store current pixel buffer for potential polaroid capture
+        currentPixelBuffer = pixelBuffer
+        
         // Skip if already detected in this session
         guard !hasDetectedInThisSession else { return }
         
@@ -918,7 +924,12 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
             let identifier = detection.identifier.lowercased()
             
             // Filter based on current challenge prompt using YOLO classes
-            if currentChallengePrompt.contains("علامات مرورية") {
+            if currentChallengePrompt.contains("علامات قف") {
+                // Stop signs challenge - YOLO classes: stop sign only
+                let isStopSign = identifier == "stop sign"
+                return isStopSign && detection.confidence >= 0.75
+                
+            } else if currentChallengePrompt.contains("علامات مرورية") {
                 // Traffic signs challenge - YOLO classes: stop sign, traffic light
                 let isTrafficSign = identifier == "stop sign" ||
                                    identifier == "traffic light" ||
@@ -961,6 +972,11 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
                             identifier.contains("bicycle") ||
                             identifier.contains("bike")
                 return isBike && detection.confidence >= 0.75
+                
+            } else if currentChallengePrompt.contains("اشارات مرور") {
+                // Traffic lights challenge - YOLO classes: traffic light only
+                let isTrafficLight = identifier == "traffic light"
+                return isTrafficLight && detection.confidence >= 0.75
                 
             } else {
                 // Default: accept any detection with high confidence
@@ -1099,6 +1115,9 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
         detectionCount += 1
         detectionStatus = String(format: "تم الاكتشاف! %.0f%% ثقة", detection.confidence * 100)
         
+        // Capture polaroid photo
+        capturePolaroidPhoto(detection: detection)
+        
         // Provide haptic feedback
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.prepare()
@@ -1118,7 +1137,12 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
         let identifier = detection.identifier.lowercased()
         
         // Final validation based on current challenge using YOLO classes
-        if currentChallengePrompt.contains("علامات مرورية") {
+        if currentChallengePrompt.contains("علامات قف") {
+            // Stop signs challenge - only accept "stop sign"
+            let isValid = identifier == "stop sign"
+            return isValid && detection.confidence >= 0.80
+            
+        } else if currentChallengePrompt.contains("علامات مرورية") {
             let validTerms = ["stop sign", "traffic light", "sign", "traffic"]
             let isValid = validTerms.contains(identifier) ||
                          identifier.contains("sign") ||
@@ -1151,16 +1175,39 @@ extension LiveDetectionCameraManager: AVCaptureVideoDataOutputSampleBufferDelega
                          identifier.contains("bike")
             return isValid && detection.confidence >= 0.80
             
-        }
-        else if currentChallengePrompt.contains("اشارات مرور") {
-            let validTerms = ["traffic light"]
-            let isValid = validTerms.contains(identifier) ||
-                         identifier.contains("traffic light")
+        } else if currentChallengePrompt.contains("اشارات مرور") {
+            // Traffic lights challenge - only accept "traffic light"
+            let isValid = identifier == "traffic light"
             return isValid && detection.confidence >= 0.80
             
-        }else {
+        } else {
             // Default validation
             return detection.confidence >= 0.85
+        }
+    }
+    
+    // MARK: - Polaroid Photo Capture
+    private func capturePolaroidPhoto(detection: (identifier: String, confidence: Float, boundingBox: CGRect)) {
+        guard let pixelBuffer = currentPixelBuffer else {
+            print("❌ No pixel buffer available for polaroid capture")
+            return
+        }
+        
+        // Create detection data
+        let detectionData = DetectionData(
+            objectDetection: currentChallengePrompt,
+            objectType: detection.identifier,
+            confidence: detection.confidence,
+            boundingBox: detection.boundingBox
+        )
+        
+        // Capture polaroid asynchronously
+        Task {
+            await PolaroidGalleryManager.shared.captureDetectionAsPolaroid(
+                pixelBuffer: pixelBuffer,
+                challengeType: .object,
+                detectionData: detectionData
+            )
         }
     }
 }

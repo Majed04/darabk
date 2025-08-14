@@ -7,6 +7,11 @@
 
 import SwiftUI
 
+// MARK: - Identifiable wrapper to avoid white sheet flash
+private struct DaySelection: Identifiable, Hashable {
+    let id: Int   // 0=Sunday ... 6=Saturday
+}
+
 struct HomeView: View {
     @EnvironmentObject var user: User
     @EnvironmentObject var challengeProgress: ChallengeProgress
@@ -19,36 +24,31 @@ struct HomeView: View {
     @State private var randomChallenge: Challenge
     @State private var showingChallengeView = false
     @State private var lastGoalAchieved = false
-    @State private var selectedDay: Int? = nil
-    @State private var showingDayDetails = false
+    @State private var selectedDay: DaySelection? = nil
     
     init() {
-        // Initialize with a random challenge
         let challenges = ChallengesData.shared.challenges
         _randomChallenge = State(initialValue: challenges.randomElement() ?? challenges[0])
     }
     
     var body: some View {
         VStack(spacing: 25) {
-            // Header with greeting and streak
+         
             HStack {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("مرحباً \(user.name.isEmpty ? "..." : user.name)")
                         .font(DesignSystem.Typography.title2)
                         .primaryText()
-                    
                     Text("استمر في التقدم!")
                         .font(DesignSystem.Typography.body)
                         .secondaryText()
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 
-                // Streak indicator
                 HStack(spacing: 8) {
                     Image(systemName: "flame.fill")
                         .font(DesignSystem.Typography.title3)
                         .foregroundColor(DesignSystem.Colors.accent)
-                    
                     Text(streakManager.currentStreak.englishFormatted)
                         .font(DesignSystem.Typography.title3)
                         .foregroundColor(DesignSystem.Colors.accent)
@@ -61,16 +61,13 @@ struct HomeView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 10)
-            
-            // Today's Steps Card
+       
             VStack(spacing: 15) {
                 HStack {
                     Text("خطواتك اليوم")
                         .font(DesignSystem.Typography.headline)
                         .primaryText()
-                    
                     Spacer()
-                    
                     if healthKitManager.isAuthorized {
                         Text("هدف: \(user.goalSteps.englishFormatted)")
                             .font(DesignSystem.Typography.caption)
@@ -87,7 +84,6 @@ struct HomeView: View {
                                 .contentTransition(.numericText())
                                 .animation(.easeInOut(duration: 0.5), value: healthKitManager.currentSteps)
                             
-                            // Progress bar
                             ProgressView(value: Double(healthKitManager.currentSteps), total: Double(user.goalSteps))
                                 .progressViewStyle(LinearProgressViewStyle(tint: DesignSystem.Colors.primary))
                                 .scaleEffect(x: 1, y: 2, anchor: .center)
@@ -95,15 +91,12 @@ struct HomeView: View {
                             Text("--")
                                 .font(DesignSystem.Typography.largeTitle)
                                 .foregroundColor(.gray)
-                            
                             Text("يرجى منح إذن الصحة")
                                 .font(DesignSystem.Typography.caption)
                                 .secondaryText()
                         }
                     }
-                    
                     Spacer()
-                    
                     Image(systemName: "figure.walk")
                         .font(.system(size: 40))
                         .foregroundColor(DesignSystem.Colors.primary)
@@ -113,23 +106,19 @@ struct HomeView: View {
             .cardStyle()
             .padding(.horizontal, 20)
             
-            // Daily Challenge Card
+   
             VStack(spacing: 15) {
                 HStack {
                     Text("تحدي اليوم")
                         .font(DesignSystem.Typography.headline)
                         .primaryText()
-                    
                     Spacer()
-                    
                     Image(systemName: "star.fill")
                         .font(DesignSystem.Typography.title3)
                         .foregroundColor(DesignSystem.Colors.accent)
                 }
                 
-                Button(action: {
-                    showingChallengeView = true
-                }) {
+                Button(action: { showingChallengeView = true }) {
                     HStack {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(randomChallenge.fullTitle)
@@ -138,7 +127,6 @@ struct HomeView: View {
                                 .multilineTextAlignment(.leading)
                                 .lineLimit(3)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                            
                             HStack {
                                 Image(systemName: "camera.fill")
                                     .font(DesignSystem.Typography.caption)
@@ -147,9 +135,7 @@ struct HomeView: View {
                             }
                             .foregroundColor(DesignSystem.Colors.invertedText.opacity(0.8))
                         }
-                        
                         Spacer()
-                        
                         Image(systemName: "chevron.left")
                             .font(DesignSystem.Typography.title3)
                             .foregroundColor(DesignSystem.Colors.invertedText.opacity(0.8))
@@ -163,15 +149,13 @@ struct HomeView: View {
             .cardStyle()
             .padding(.horizontal, 20)
             
-            // Weekly Progress Card
-            VStack(spacing: 8) {
+        
+            VStack(spacing: 12) {
                 HStack {
                     Text("أدائك الأسبوعي")
                         .font(DesignSystem.Typography.headline)
                         .primaryText()
-                    
                     Spacer()
-                    
                     if let weeklyInsight = dataManager.weeklyInsight {
                         VStack(alignment: .trailing, spacing: 2) {
                             Text("متوسط")
@@ -185,69 +169,79 @@ struct HomeView: View {
                     }
                 }
                 
-                let weeklyData = dataManager.getWeeklyChartData()
-                let maxSteps = max(weeklyData.max() ?? 10000, user.goalSteps, 15000) // Ensure minimum scale
                 
-                // Weekly chart
-                HStack(spacing: 6) {
-                    ForEach(0..<7, id: \.self) { day in
-                        VStack(spacing: 3) {
-                            // Steps count above bar
-                            Text(weeklyData[day].englishFormatted)
+                let (labels, stepsArr) = sundayFirstWeekly(labelsFrom: dataManager.getWeeklyChartData())
+                let maxSteps = max(stepsArr.max() ?? 10000, user.goalSteps, 15000)
+                
+              
+                let barWidth: CGFloat = 26
+                let barHeight: CGFloat = 60
+                let barSpacing: CGFloat = 12
+                let valueAreaHeight: CGFloat = 16
+               
+                
+                HStack(spacing: barSpacing) {
+                    ForEach(0..<stepsArr.count, id: \.self) { i in
+                        let steps = stepsArr[i]
+                        let label = labels[i]
+                        let reached = steps >= user.goalSteps
+                        let h = max(3, CGFloat(steps) / CGFloat(maxSteps) * barHeight)
+                        let goalY = CGFloat(user.goalSteps) / CGFloat(maxSteps) * barHeight
+                        
+                        VStack(spacing: 8) {
+                      
+                            Text(steps.englishFormatted)
                                 .font(DesignSystem.Typography.caption2)
-                                .foregroundColor(weeklyData[day] >= user.goalSteps ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
+                                .foregroundColor(reached ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.7)
+                                .frame(height: valueAreaHeight)
+                                .zIndex(1)
                             
-                            // Progress bar
-                            VStack(spacing: 0) {
-                                ZStack(alignment: .bottom) {
-                                    // Background bar
-                                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
-                                        .fill(DesignSystem.Colors.primaryMedium)
-                                        .frame(width: 24, height: 50)
-                                    
-                                    // Progress bar
-                                    RoundedRectangle(cornerRadius: DesignSystem.CornerRadius.small)
-                                        .fill(weeklyData[day] >= user.goalSteps ? DesignSystem.Colors.primary : DesignSystem.Colors.primary.opacity(0.6))
-                                        .frame(width: 24, height: max(2, CGFloat(weeklyData[day]) / CGFloat(maxSteps) * 50))
-                                        .animation(.easeInOut(duration: 0.3), value: weeklyData[day])
-                                }
+                       
+                            ZStack(alignment: .bottom) {
+                               
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(DesignSystem.Colors.primaryMedium.opacity(0.6))
+                                    .frame(width: barWidth, height: barHeight)
+                                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+                       
+                                Rectangle()
+                                    .fill(DesignSystem.Colors.primary)
+                                    .frame(width: barWidth, height: 1)
+                                    .offset(y: -(barHeight - goalY))
+                                    .opacity(0.9)
                                 
-                                // Goal indicator line
-                                if weeklyData[day] < user.goalSteps {
-                                    Rectangle()
-                                        .fill(DesignSystem.Colors.primary)
-                                        .frame(width: 24, height: 1)
-                                        .offset(y: -CGFloat(user.goalSteps) / CGFloat(maxSteps) * 50)
-                                }
+                                
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(reached ? DesignSystem.Colors.primary : DesignSystem.Colors.primary.opacity(0.65))
+                                    .frame(width: barWidth, height: h)
+                                    .animation(.easeInOut(duration: 0.22), value: steps)
                             }
-                            .onTapGesture {
-                                selectedDay = day
-                                showingDayDetails = true
-                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture { selectedDay = DaySelection(id: i) } // i = Sunday..Saturday
                             
-                            // Day label
-                            Text(["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"][day])
+                    
+                            Text(label)
                                 .font(DesignSystem.Typography.caption2)
-                                .foregroundColor(weeklyData[day] >= user.goalSteps ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
-                                .fontWeight(weeklyData[day] >= user.goalSteps ? .semibold : .regular)
+                                .foregroundColor(reached ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
+                                .fontWeight(reached ? .semibold : .regular)
+                                .frame(width: barWidth + 8)
                         }
                     }
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 2) // tiny buffer above the chart
                 
-                // Goal line explanation
+              
                 HStack(spacing: 8) {
                     Rectangle()
                         .fill(DesignSystem.Colors.primary)
                         .frame(width: 20, height: 2)
-                    
                     Text("خط الهدف")
                         .font(DesignSystem.Typography.caption)
                         .secondaryText()
-                    
                     Spacer()
-                    
                     HStack(spacing: 4) {
                         Circle()
                             .fill(DesignSystem.Colors.primary)
@@ -259,7 +253,7 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, 4)
             }
-            .padding(12)
+            .padding(16)
             .cardStyle()
             .padding(.horizontal, 20)
             
@@ -271,19 +265,22 @@ struct HomeView: View {
             ChallengePage(selectedChallenge: randomChallenge)
                 .environmentObject(challengeProgress)
         }
-        .onAppear {
-            setupDataTracking()
-        }
+        .onAppear { setupDataTracking() }
         .onChange(of: healthKitManager.currentSteps) { _, newSteps in
             handleStepsUpdate(newSteps)
         }
-        .sheet(isPresented: $showingDayDetails) {
-            if let selectedDay = selectedDay {
-                DayDetailsView(day: selectedDay, weeklyData: dataManager.getWeeklyChartData(), goalSteps: user.goalSteps)
-            }
+        .sheet(item: $selectedDay) { selection in
+           
+            let (_, stepsArr) = sundayFirstWeekly(labelsFrom: dataManager.getWeeklyChartData())
+            DayDetailsView(
+                day: selection.id,
+                weeklyData: stepsArr,
+                goalSteps: user.goalSteps
+            )
         }
     }
     
+    // MARK: - Helpers
     private func setupDataTracking() {
         healthKitManager.fetchAllTodayData()
         dataManager.fetchHistoricalData()
@@ -292,31 +289,22 @@ struct HomeView: View {
     }
     
     private func handleStepsUpdate(_ newSteps: Int) {
-        // Update data manager with all current health data
         dataManager.updateTodayData(
             steps: newSteps,
             distance: healthKitManager.currentDistance,
             calories: healthKitManager.currentCalories
         )
-        
-        // Update streak if goal achieved
         let goalAchieved = newSteps >= user.goalSteps
         if goalAchieved && !lastGoalAchieved {
             streakManager.updateStreakForToday()
             achievementManager.updateConsistencyForToday(true)
-            // Send notification for goal achievement
             notificationManager.sendGoalAchievementNotification()
         }
         lastGoalAchieved = goalAchieved
         
-        // Update achievements
         achievementManager.updateProgress()
-        
-        // Submit scores to Game Center
         GameCenterManager.shared.submitDailySteps(newSteps)
         GameCenterManager.shared.submitStreak(streakManager.currentStreak)
-        
-        // Check and unlock Game Center achievements
         let totalSteps = dataManager.monthlyHealthData.reduce(0) { $0 + $1.steps }
         GameCenterManager.shared.checkAndUnlockAchievements(
             steps: newSteps,
@@ -334,75 +322,52 @@ struct DayDetailsView: View {
     
     @Environment(\.dismiss) private var dismiss
     
-    private var dayName: String {
-        ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"][day]
-    }
-    
-    private var steps: Int {
-        weeklyData[day]
-    }
-    
+    private var steps: Int { weeklyData[safe: day] ?? 0 }
     private var progressPercentage: Double {
         guard goalSteps > 0 else { return 0 }
         return Double(steps) / Double(goalSteps) * 100
     }
-    
-    private var isGoalAchieved: Bool {
-        steps >= goalSteps
-    }
+    private var isGoalAchieved: Bool { steps >= goalSteps }
     
     var body: some View {
         NavigationView {
             VStack(spacing: 25) {
-                // Header
                 VStack(spacing: 10) {
-                    Text(dayName)
+                    Text(arabicLongWeekdayForSundayFirstIndex(day))
                         .font(DesignSystem.Typography.largeTitle)
                         .primaryText()
-                    
                     Text("تفاصيل الخطوات")
                         .font(DesignSystem.Typography.body)
                         .secondaryText()
                 }
                 .padding(.top, 20)
                 
-                // Steps Card
                 VStack(spacing: 20) {
-                    // Steps count
                     VStack(spacing: 8) {
                         Text(steps.englishFormatted)
                             .font(.system(size: 48, weight: .bold, design: .rounded))
                             .accentText()
-                        
                         Text("خطوة")
                             .font(DesignSystem.Typography.title3)
                             .secondaryText()
                     }
-                    
-                    // Progress bar
                     VStack(spacing: 8) {
                         HStack {
                             Text("الهدف: \(goalSteps.englishFormatted)")
                                 .font(DesignSystem.Typography.caption)
                                 .secondaryText()
-                            
                             Spacer()
-                            
                             Text("\(Int(progressPercentage))%")
                                 .font(DesignSystem.Typography.caption)
                                 .foregroundColor(isGoalAchieved ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
                         }
-                        
                         ProgressView(value: Double(steps), total: Double(goalSteps))
                             .progressViewStyle(LinearProgressViewStyle(tint: DesignSystem.Colors.primary))
                             .scaleEffect(x: 1, y: 2, anchor: .center)
                     }
-                    
-                    // Status indicator
                     HStack(spacing: 8) {
                         Image(systemName: isGoalAchieved ? "checkmark.circle.fill" : "circle")
                             .foregroundColor(isGoalAchieved ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
-                        
                         Text(isGoalAchieved ? "تم تحقيق الهدف" : "لم يتم تحقيق الهدف بعد")
                             .font(DesignSystem.Typography.body)
                             .foregroundColor(isGoalAchieved ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
@@ -413,7 +378,6 @@ struct DayDetailsView: View {
                 .cardStyle()
                 .padding(.horizontal, 20)
                 
-                // Additional stats
                 VStack(spacing: 15) {
                     HStack {
                         StatItem(
@@ -422,7 +386,6 @@ struct DayDetailsView: View {
                             icon: "figure.walk",
                             color: DesignSystem.Colors.primary
                         )
-                        
                         StatItem(
                             title: "النسبة المئوية",
                             value: "\(Int(progressPercentage))%",
@@ -439,10 +402,8 @@ struct DayDetailsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("إغلاق") {
-                        dismiss()
-                    }
-                    .foregroundColor(DesignSystem.Colors.primary)
+                    Button("إغلاق") { dismiss() }
+                        .foregroundColor(DesignSystem.Colors.primary)
                 }
             }
         }
@@ -461,13 +422,11 @@ struct StatItem: View {
             Image(systemName: icon)
                 .font(DesignSystem.Typography.title2)
                 .foregroundColor(color)
-            
             VStack(spacing: 4) {
                 Text(value)
                     .font(DesignSystem.Typography.title2)
                     .primaryText()
                     .bold()
-                
                 Text(title)
                     .font(DesignSystem.Typography.caption)
                     .secondaryText()
@@ -476,6 +435,66 @@ struct StatItem: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
         .cardStyle()
+    }
+}
+
+// MARK: - Utilities
+
+
+private func sundayFirstWeekly(labelsFrom raw: [Int]) -> (labels: [String], steps: [Int]) {
+    let cal = Calendar(identifier: .gregorian)
+    let today = cal.startOfDay(for: Date())
+    // Ensure exactly 7 entries; if fewer, pad front with zeros
+    var trimmed = raw
+    if trimmed.count > 7 { trimmed = Array(trimmed.suffix(7)) }
+    if trimmed.count < 7 { trimmed = Array(repeating: 0, count: 7 - trimmed.count) + trimmed }
+    
+
+    let dates: [Date] = (0..<7).compactMap { i in
+        cal.date(byAdding: .day, value: i - 6, to: today)
+    }
+    let pairs = Array(zip(dates, trimmed))
+    
+    func sundayIndex(_ d: Date) -> Int {
+       
+        cal.component(.weekday, from: d) - 1
+    }
+    let ordered = pairs.sorted { sundayIndex($0.0) < sundayIndex($1.0) }
+    
+    let labels = ordered.map { arabicShortWeekday(for: $0.0, calendar: cal) } // "أحد".."سبت"
+    let steps  = ordered.map { $0.1 }
+    return (labels, steps)
+}
+
+
+private extension Array {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}
+
+// Arabic short weekday from Date
+private func arabicShortWeekday(for date: Date, calendar: Calendar) -> String {
+    switch calendar.component(.weekday, from: date) { // 1=Sun … 7=Sat
+    case 1: return "أحد"
+    case 2: return "اثنين"
+    case 3: return "ثلاثاء"
+    case 4: return "أربعاء"
+    case 5: return "خميس"
+    case 6: return "جمعة"
+    default: return "سبت"
+    }
+}
+
+private func arabicLongWeekdayForSundayFirstIndex(_ index: Int) -> String {
+    switch index {
+    case 0: return "الأحد"
+    case 1: return "الاثنين"
+    case 2: return "الثلاثاء"
+    case 3: return "الأربعاء"
+    case 4: return "الخميس"
+    case 5: return "الجمعة"
+    default: return "السبت"
     }
 }
 
@@ -489,3 +508,4 @@ struct StatItem: View {
         .environmentObject(DataManager())
         .environmentObject(NotificationManager())
 }
+
