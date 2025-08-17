@@ -313,16 +313,7 @@ struct TheChallengeView: View {
             }
         }
         .sheet(isPresented: $showingColorCamera) {
-            if currentChallenge.isColorChallenge, let targetColor = currentChallenge.targetColor {
-                ColorDetectionCameraView(
-                    isPresented: $showingColorCamera,
-                    challengeProgress: challengeProgress,
-                    onDetectionComplete: {
-                        handleDetectionComplete()
-                    },
-                    targetColor: targetColor
-                )
-            }
+            
         }
         .fullScreenCover(isPresented: $showingPostChallenge) {
             PostChallengeView(onBackToHome: {

@@ -131,7 +131,7 @@ struct ProfileView: View {
                     
                     ProfileMenuItem(
                         icon: "chart.line.uptrend.xyaxis",
-                        title: "تحليل البيانات",
+                        title: "بياناتك",
                         subtitle: "اطلع على إحصائياتك المفصلة",
                         action: { showingDataInsights = true }
                     )

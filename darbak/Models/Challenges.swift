@@ -46,9 +46,6 @@ class ChallengesData {
         Challenge(imageName: "Cat", prompt: "3 قطط", emojis: ["🐈", "🐱", "🐈‍⬛", "😸", "🐾"], totalPhotos: 3, modelName: "YOLOv3TinyInt8LUT", hasAI: true),
         Challenge(imageName: "Birds", prompt: "4 طيور", emojis: ["🐦", "🐥", "🦜", "🦤", "🕊️", "🪿"], totalPhotos: 4, modelName: "YOLOv3TinyInt8LUT", hasAI: true),
         Challenge(imageName: "TrafficLight", prompt: "3 اشارات مرور", emojis: ["🚦", "🚥", "🚘", "⚠️", "🛣️", "🚦"], totalPhotos: 3, modelName: "YOLOv3TinyInt8LUT", hasAI: true),
-        Challenge(imageName: "Cat", prompt: "4 سياكل", emojis: ["🚴🏼", "🚵🏼", "🚲", "🚴🏼‍♀️", "🚲", "🚵🏼"], totalPhotos: 4, modelName: "YOLOv3TinyInt8LUT", hasAI: true),
-        Challenge(imageName: "Colors", prompt: "7 أشياء خضراء", emojis: ["🟢", "🍃", "🌿", "🥒", "🍏", "🧩"], totalPhotos: 7, modelName: "ColorDetection", hasAI: true, isColorChallenge: true, targetColor: "green"),
-        Challenge(imageName: "Colors", prompt: "5 أشياء زرقاء", emojis: ["👤", "🟦", "🧢", "💙", "📘", "🔵"], totalPhotos: 5, modelName: "ColorDetection", hasAI: true, isColorChallenge: true, targetColor: "blue"),
-        Challenge(imageName: "Colors", prompt: "5 أشياء حمراء", emojis: ["🍎", "🚗", "🛑", "🍅", "♦️", "🥤"], totalPhotos: 5, modelName: "ColorDetection", hasAI: true, isColorChallenge: true, targetColor: "red")
+        Challenge(imageName: "bicycle", prompt: "4 سياكل", emojis: ["🚴🏼", "🚵🏼", "🚲", "🚴🏼‍♀️", "🚲", "🚵🏼"], totalPhotos: 4, modelName: "YOLOv3TinyInt8LUT", hasAI: true)
     ]
 }
