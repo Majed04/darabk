@@ -69,8 +69,8 @@ class NotificationManager: NSObject, ObservableObject {
         
         // Schedule for 9 AM every day
         var dateComponents = DateComponents()
-        dateComponents.hour = 12
-        dateComponents.minute = 8
+        dateComponents.hour = 9
+        dateComponents.minute = 0
         
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
         let request = UNNotificationRequest(identifier: "dailyReminder", content: content, trigger: trigger)
@@ -81,7 +81,7 @@ class NotificationManager: NSObject, ObservableObject {
     private func scheduleStreakReminder() {
         let content = UNMutableNotificationContent()
         content.title = "لا تقطع الصملة! 🔥"
-        content.body = "لديك صملة رائعة، حافظ عليها بإكمال هدفك اليوم"
+        content.body = "شد حيلك و كمل هدفك اليوم"
         content.sound = .default
         
         // Schedule for 8 PM every day
@@ -98,7 +98,7 @@ class NotificationManager: NSObject, ObservableObject {
     private func scheduleGoalCheckReminder() {
         let content = UNMutableNotificationContent()
         content.title = "فحص الهدف 📊"
-        content.body = "كيف تسير الأمور اليوم؟ تحقق من تقدمك"
+        content.body = "مساء الخير، لا تنسى تكمل الهدف"
         content.sound = .default
         
         // Schedule for 6 PM every day
@@ -156,7 +156,7 @@ class NotificationManager: NSObject, ObservableObject {
         guard streakReminderEnabled else { return }
         
         let content = UNMutableNotificationContent()
-        content.title = "صملة مذهلة! 🔥"
+        content.title = "صملة تاريخية! 🔥"
         content.body = "واو! لقد وصلت إلى \(days) يوم متتالي!"
         content.sound = .default
         
