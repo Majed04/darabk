@@ -423,20 +423,7 @@ struct TheChallengeView: View {
     }
     
     private func updateCompetitionProgress() {
-        let competitionManager = CompetitionManager.shared
-        let gameCenterManager = GameCenterManager.shared
-        
-        guard let currentPlayer = gameCenterManager.currentPlayer else { return }
-        
-        // Check if player is in active race
-        if let activeRace = competitionManager.getActiveRace(for: currentPlayer.gamePlayerID) {
-            competitionManager.updateRaceProgress(
-                raceId: activeRace.id.uuidString,
-                playerId: currentPlayer.gamePlayerID,
-                completedPhotos: challengeProgress.completedPhotos,
-                dailyGoalProgress: healthKitManager.currentSteps
-            )
-        }
+        // Competition progress tracking removed
     }
     
     private func openStandardCamera() {

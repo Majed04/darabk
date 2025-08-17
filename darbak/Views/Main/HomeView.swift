@@ -303,14 +303,6 @@ struct HomeView: View {
         lastGoalAchieved = goalAchieved
         
         achievementManager.updateProgress()
-        GameCenterManager.shared.submitDailySteps(newSteps)
-        GameCenterManager.shared.submitStreak(streakManager.currentStreak)
-        let totalSteps = dataManager.monthlyHealthData.reduce(0) { $0 + $1.steps }
-        GameCenterManager.shared.checkAndUnlockAchievements(
-            steps: newSteps,
-            streak: streakManager.currentStreak,
-            totalSteps: totalSteps
-        )
     }
 }
 
