@@ -20,20 +20,24 @@ struct HomeView: View {
     @EnvironmentObject var achievementManager: AchievementManager
     @EnvironmentObject var dataManager: DataManager
     @EnvironmentObject var notificationManager: NotificationManager
-    
+
+    // We need this to anchor the star to the physical top-left corner even in RTL.
+    @Environment(\.layoutDirection) private var layoutDirection
+
     @State private var randomChallenge: Challenge
     @State private var showingChallengeView = false
     @State private var lastGoalAchieved = false
     @State private var selectedDay: DaySelection? = nil
-    
+
     init() {
         let challenges = ChallengesData.shared.challenges
         _randomChallenge = State(initialValue: challenges.randomElement() ?? challenges[0])
     }
-    
+
     var body: some View {
         VStack(spacing: 25) {
-         
+
+            // Header
             HStack {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("مرحباً \(user.name.isEmpty ? "..." : user.name)")
@@ -44,7 +48,7 @@ struct HomeView: View {
                         .secondaryText()
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                
+
                 HStack(spacing: 8) {
                     Image(systemName: "flame.fill")
                         .font(DesignSystem.Typography.title3)
@@ -61,7 +65,8 @@ struct HomeView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 10)
-       
+
+            // Today card
             VStack(spacing: 15) {
                 HStack {
                     Text("خطواتك اليوم")
@@ -74,7 +79,7 @@ struct HomeView: View {
                             .secondaryText()
                     }
                 }
-                
+
                 HStack {
                     VStack(alignment: .leading, spacing: 8) {
                         if healthKitManager.isAuthorized {
@@ -83,7 +88,7 @@ struct HomeView: View {
                                 .accentText()
                                 .contentTransition(.numericText())
                                 .animation(.easeInOut(duration: 0.5), value: healthKitManager.currentSteps)
-                            
+
                             ProgressView(value: Double(healthKitManager.currentSteps), total: Double(user.goalSteps))
                                 .progressViewStyle(LinearProgressViewStyle(tint: DesignSystem.Colors.primary))
                                 .scaleEffect(x: 1, y: 2, anchor: .center)
@@ -105,19 +110,16 @@ struct HomeView: View {
             .padding(20)
             .cardStyle()
             .padding(.horizontal, 20)
-            
-   
+
+            // Challenge card — star sits OUTSIDE the blue, on its top-left corner
             VStack(spacing: 15) {
                 HStack {
                     Text("تحدي اليوم")
                         .font(DesignSystem.Typography.headline)
                         .primaryText()
                     Spacer()
-                    Image(systemName: "star.fill")
-                        .font(DesignSystem.Typography.title3)
-                        .foregroundColor(DesignSystem.Colors.accent)
                 }
-                
+
                 Button(action: { showingChallengeView = true }) {
                     HStack {
                         VStack(alignment: .leading, spacing: 8) {
@@ -127,18 +129,21 @@ struct HomeView: View {
                                 .multilineTextAlignment(.leading)
                                 .lineLimit(3)
                                 .frame(maxWidth: .infinity, alignment: .leading)
+
                             HStack {
                                 Image(systemName: "camera.fill")
                                     .font(DesignSystem.Typography.caption)
                                 Text("اضغط للبدء")
                                     .font(DesignSystem.Typography.caption)
                             }
-                            .foregroundColor(DesignSystem.Colors.invertedText.opacity(0.8))
+                            .foregroundColor(DesignSystem.Colors.invertedText.opacity(0.85))
                         }
+
                         Spacer()
+
                         Image(systemName: "chevron.left")
                             .font(DesignSystem.Typography.title3)
-                            .foregroundColor(DesignSystem.Colors.invertedText.opacity(0.8))
+                            .foregroundColor(DesignSystem.Colors.invertedText.opacity(0.85))
                     }
                     .padding(20)
                     .background(DesignSystem.Colors.primary)
@@ -148,38 +153,48 @@ struct HomeView: View {
             .padding(20)
             .cardStyle()
             .padding(.horizontal, 20)
-            
-        
+            .overlay(alignment: .topTrailing) {
+                Image("HomePageStar")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                    .offset(x: 0, y: -50)
+                    .rotationEffect(.degrees(15))
+                    .shadow(color: .black.opacity(0.12), radius: 2, x: 0, y: 1)
+                    .allowsHitTesting(false)
+            }
+
+            // Weekly chart (Sunday → Saturday) – resets every week
             VStack(spacing: 12) {
                 HStack {
                     Text("أدائك الأسبوعي")
                         .font(DesignSystem.Typography.headline)
                         .primaryText()
                     Spacer()
-                    if let weeklyInsight = dataManager.weeklyInsight {
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text("متوسط")
-                                .font(DesignSystem.Typography.caption)
-                                .secondaryText()
-                            Text(weeklyInsight.averageSteps.englishFormatted)
-                                .font(DesignSystem.Typography.body)
-                                .accentText()
-                                .bold()
-                        }
+
+                    // Average based on THIS week's data (same as the chart)
+                    let (_, avgSource) = sundayFirstWeekly_CurrentWeek(from: dataManager.getWeeklyChartData())
+                    let weeklyAverage = avgSource.reduce(0, +) / max(1, avgSource.count)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("متوسط")
+                            .font(DesignSystem.Typography.caption)
+                            .secondaryText()
+                        Text(weeklyAverage.englishFormatted)
+                            .font(DesignSystem.Typography.body)
+                            .accentText()
+                            .bold()
                     }
                 }
-                
-                
-                let (labels, stepsArr) = sundayFirstWeekly(labelsFrom: dataManager.getWeeklyChartData())
+
+                let (labels, stepsArr) = sundayFirstWeekly_CurrentWeek(from: dataManager.getWeeklyChartData())
                 let maxSteps = max(stepsArr.max() ?? 10000, user.goalSteps, 15000)
-                
-              
+
+                // Compact bars so the challenge text has space
                 let barWidth: CGFloat = 26
                 let barHeight: CGFloat = 60
                 let barSpacing: CGFloat = 12
                 let valueAreaHeight: CGFloat = 16
-               
-                
+
                 HStack(spacing: barSpacing) {
                     ForEach(0..<stepsArr.count, id: \.self) { i in
                         let steps = stepsArr[i]
@@ -187,41 +202,34 @@ struct HomeView: View {
                         let reached = steps >= user.goalSteps
                         let h = max(3, CGFloat(steps) / CGFloat(maxSteps) * barHeight)
                         let goalY = CGFloat(user.goalSteps) / CGFloat(maxSteps) * barHeight
-                        
+
                         VStack(spacing: 8) {
-                      
                             Text(steps.englishFormatted)
                                 .font(DesignSystem.Typography.caption2)
                                 .foregroundColor(reached ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.7)
                                 .frame(height: valueAreaHeight)
-                                .zIndex(1)
-                            
-                       
+
                             ZStack(alignment: .bottom) {
-                               
                                 RoundedRectangle(cornerRadius: 10)
                                     .fill(DesignSystem.Colors.primaryMedium.opacity(0.6))
                                     .frame(width: barWidth, height: barHeight)
-                                    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-                       
+
                                 Rectangle()
                                     .fill(DesignSystem.Colors.primary)
                                     .frame(width: barWidth, height: 1)
                                     .offset(y: -(barHeight - goalY))
                                     .opacity(0.9)
-                                
-                                
+
                                 RoundedRectangle(cornerRadius: 10)
                                     .fill(reached ? DesignSystem.Colors.primary : DesignSystem.Colors.primary.opacity(0.65))
                                     .frame(width: barWidth, height: h)
                                     .animation(.easeInOut(duration: 0.22), value: steps)
                             }
                             .contentShape(Rectangle())
-                            .onTapGesture { selectedDay = DaySelection(id: i) } // i = Sunday..Saturday
-                            
-                    
+                            .onTapGesture { selectedDay = DaySelection(id: i) } // 0=Sun..6=Sat
+
                             Text(label)
                                 .font(DesignSystem.Typography.caption2)
                                 .foregroundColor(reached ? DesignSystem.Colors.primary : DesignSystem.Colors.secondaryText)
@@ -231,9 +239,8 @@ struct HomeView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.top, 2) // tiny buffer above the chart
-                
-              
+                .padding(.top, 2)
+
                 HStack(spacing: 8) {
                     Rectangle()
                         .fill(DesignSystem.Colors.primary)
@@ -256,7 +263,7 @@ struct HomeView: View {
             .padding(16)
             .cardStyle()
             .padding(.horizontal, 20)
-            
+
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -270,8 +277,7 @@ struct HomeView: View {
             handleStepsUpdate(newSteps)
         }
         .sheet(item: $selectedDay) { selection in
-           
-            let (_, stepsArr) = sundayFirstWeekly(labelsFrom: dataManager.getWeeklyChartData())
+            let (_, stepsArr) = sundayFirstWeekly_CurrentWeek(from: dataManager.getWeeklyChartData())
             DayDetailsView(
                 day: selection.id,
                 weeklyData: stepsArr,
@@ -279,7 +285,7 @@ struct HomeView: View {
             )
         }
     }
-    
+
     // MARK: - Helpers
     private func setupDataTracking() {
         healthKitManager.fetchAllTodayData()
@@ -287,7 +293,7 @@ struct HomeView: View {
         streakManager.calculateCurrentStreak()
         achievementManager.updateProgress()
     }
-    
+
     private func handleStepsUpdate(_ newSteps: Int) {
         dataManager.updateTodayData(
             steps: newSteps,
@@ -301,7 +307,6 @@ struct HomeView: View {
             notificationManager.sendGoalAchievementNotification()
         }
         lastGoalAchieved = goalAchieved
-        
         achievementManager.updateProgress()
     }
 }
@@ -311,16 +316,16 @@ struct DayDetailsView: View {
     let day: Int
     let weeklyData: [Int]
     let goalSteps: Int
-    
+
     @Environment(\.dismiss) private var dismiss
-    
+
     private var steps: Int { weeklyData[safe: day] ?? 0 }
     private var progressPercentage: Double {
         guard goalSteps > 0 else { return 0 }
         return Double(steps) / Double(goalSteps) * 100
     }
     private var isGoalAchieved: Bool { steps >= goalSteps }
-    
+
     var body: some View {
         NavigationView {
             VStack(spacing: 25) {
@@ -333,7 +338,7 @@ struct DayDetailsView: View {
                         .secondaryText()
                 }
                 .padding(.top, 20)
-                
+
                 VStack(spacing: 20) {
                     VStack(spacing: 8) {
                         Text(steps.englishFormatted)
@@ -369,7 +374,7 @@ struct DayDetailsView: View {
                 .padding(25)
                 .cardStyle()
                 .padding(.horizontal, 20)
-                
+
                 VStack(spacing: 15) {
                     HStack {
                         StatItem(
@@ -387,7 +392,7 @@ struct DayDetailsView: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                
+
                 Spacer()
             }
             .background(DesignSystem.Colors.background)
@@ -408,7 +413,7 @@ struct StatItem: View {
     let value: String
     let icon: String
     let color: Color
-    
+
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: icon)
@@ -432,33 +437,42 @@ struct StatItem: View {
 
 // MARK: - Utilities
 
-
-private func sundayFirstWeekly(labelsFrom raw: [Int]) -> (labels: [String], steps: [Int]) {
+/// Build Sunday→Saturday arrays **for the current week only**.
+/// Any day that belongs to last week is set to 0 so the chart resets weekly.
+private func sundayFirstWeekly_CurrentWeek(from raw: [Int]) -> (labels: [String], steps: [Int]) {
     let cal = Calendar(identifier: .gregorian)
     let today = cal.startOfDay(for: Date())
-    // Ensure exactly 7 entries; if fewer, pad front with zeros
+
+    // Ensure exactly 7 entries; if fewer, pad front with zeros. Assume raw = last 7 days (oldest → today).
     var trimmed = raw
     if trimmed.count > 7 { trimmed = Array(trimmed.suffix(7)) }
     if trimmed.count < 7 { trimmed = Array(repeating: 0, count: 7 - trimmed.count) + trimmed }
-    
 
+    // Dates for last 7 entries: 0 = 6 days ago … 6 = today
     let dates: [Date] = (0..<7).compactMap { i in
         cal.date(byAdding: .day, value: i - 6, to: today)
     }
-    let pairs = Array(zip(dates, trimmed))
-    
-    func sundayIndex(_ d: Date) -> Int {
-       
-        cal.component(.weekday, from: d) - 1
+
+    // This week's Sunday start and exclusive end (next Sunday)
+    let weekday = cal.component(.weekday, from: today) // 1=Sun … 7=Sat
+    let startOfWeek = cal.date(byAdding: .day, value: -(weekday - 1), to: today)!  // Sunday
+    let startOfNextWeek = cal.date(byAdding: .day, value: 7, to: startOfWeek)!     // next Sunday
+
+    // Keep only this week's values
+    let pairsThisWeek: [(date: Date, steps: Int)] = zip(dates, trimmed).map { (d, s) in
+        (d >= startOfWeek && d < startOfNextWeek) ? (d, s) : (d, 0)
     }
-    let ordered = pairs.sorted { sundayIndex($0.0) < sundayIndex($1.0) }
-    
-    let labels = ordered.map { arabicShortWeekday(for: $0.0, calendar: cal) } // "أحد".."سبت"
-    let steps  = ordered.map { $0.1 }
+
+    // Sort to Sunday→Saturday
+    func sundayIndex(_ d: Date) -> Int { cal.component(.weekday, from: d) - 1 } // 0..6
+    let ordered = pairsThisWeek.sorted { sundayIndex($0.date) < sundayIndex($1.date) }
+
+    let labels = ordered.map { arabicShortWeekday(for: $0.date, calendar: cal) }
+    let steps  = ordered.map { $0.steps }
     return (labels, steps)
 }
 
-
+// Safe array access
 private extension Array {
     subscript(safe index: Index) -> Element? {
         indices.contains(index) ? self[index] : nil
@@ -500,4 +514,3 @@ private func arabicLongWeekdayForSundayFirstIndex(_ index: Int) -> String {
         .environmentObject(DataManager())
         .environmentObject(NotificationManager())
 }
-
