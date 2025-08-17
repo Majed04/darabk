@@ -16,6 +16,7 @@ struct TheChallengeView: View {
     @State private var showingColorCamera = false
     @State private var cameraPermissionStatus: AVAuthorizationStatus = .notDetermined
     @State private var showGiveUpAlert = false
+    @State private var showingPostChallenge = false
     
     private var dailyGoal: Int {
         user.goalSteps > 0 ? user.goalSteps : 10000
@@ -143,8 +144,8 @@ struct TheChallengeView: View {
                 
                 Spacer()
                 
-                ChallengePhotosDisplay()
-                    .padding(.horizontal, 20)
+                // Large challenge image display
+                challengeImageView
                 
                 
 #if DEBUG
@@ -323,6 +324,17 @@ struct TheChallengeView: View {
                 )
             }
         }
+        .fullScreenCover(isPresented: $showingPostChallenge) {
+            PostChallengeView(onBackToHome: {
+                // Reset challenge progress completely to force navigation to home
+                challengeProgress.resetProgress()
+                
+                // Dismiss the full screen cover
+                showingPostChallenge = false
+            })
+            .navigationBarHidden(true)
+            .navigationBarBackButtonHidden(true)
+        }
         .alert(isPresented: $showGiveUpAlert) {
             Alert(
                 title: Text("توك بدري"),
@@ -419,11 +431,29 @@ struct TheChallengeView: View {
             // Mark photos as preserved when challenge is completed
             PolaroidGalleryManager.shared.completeChallengeSession()
             challengeProgress.completeChallenge()
+            
+            // Navigate to post challenge view
+            showingPostChallenge = true
         }
     }
     
     private func updateCompetitionProgress() {
         // Competition progress tracking removed
+    }
+    
+    // MARK: - Challenge Image Display View
+    private var challengeImageView: some View {
+        Rectangle()
+            .fill(Color.clear)
+            .frame(height: 320)
+            .overlay(
+                Image(currentChallenge.imageName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .cornerRadius(15)
+            )
+            .cornerRadius(15)
+            .padding(.horizontal, 20)
     }
     
     private func openStandardCamera() {
@@ -443,6 +473,8 @@ struct TheChallengeView: View {
         }
     }
 }
+
+
 
 #Preview {
     TheChallengeView()
