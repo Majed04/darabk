@@ -148,21 +148,21 @@ struct HomeView: View {
                     .padding(20)
                     .background(DesignSystem.Colors.primary)
                     .cornerRadius(DesignSystem.CornerRadius.medium)
-                    // Anchor to physical top-left: use trailing in RTL, leading in LTR
-                    .overlay(alignment: (layoutDirection == .rightToLeft) ? .topTrailing : .topLeading) {
-                        Image("HomePageStar")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 120, height:120)   // change here to make bigger/smaller
-                            .offset(x: 36, y: -50)         // negative to nudge OUTSIDE the blue
-                            .shadow(color: .black.opacity(0.12), radius: 2, x: 0, y: 1)
-                            .allowsHitTesting(false)        // don’t block taps
-                    }
                 }
             }
             .padding(20)
             .cardStyle()
             .padding(.horizontal, 20)
+            .overlay(alignment: .topTrailing) {
+                Image("HomePageStar")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                    .offset(x: 0, y: -50)
+                    .rotationEffect(.degrees(15))
+                    .shadow(color: .black.opacity(0.12), radius: 2, x: 0, y: 1)
+                    .allowsHitTesting(false)
+            }
 
             // Weekly chart (Sunday → Saturday) – resets every week
             VStack(spacing: 12) {
