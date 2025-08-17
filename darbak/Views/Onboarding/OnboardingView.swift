@@ -19,14 +19,13 @@ struct Onboarding: View {
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .frame(maxWidth: .infinity)
-                .padding(.top, 90,)
-                .frame(height: UIScreen.main.bounds.height * 0.5)
+                .frame(height: UIScreen.main.bounds.height * 0.65)
                 .clipShape(
                     RoundedCorner(radius: 24, corners: [.bottomLeft, .bottomRight])
                 )
             
             // Bottom half - Content section
-            VStack(spacing: DesignSystem.Spacing.xl) {
+            VStack() {
             
                 
                 // Welcome text
@@ -83,7 +82,7 @@ struct Onboarding: View {
                 .padding(.bottom, 40)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: UIScreen.main.bounds.height * 0.5)
+            .frame(height: UIScreen.main.bounds.height * 0.35)
             .background(DesignSystem.Colors.background)
         }
         .ignoresSafeArea()
