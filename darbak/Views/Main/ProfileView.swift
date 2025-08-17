@@ -157,12 +157,7 @@ struct ProfileView: View {
                         action: { showingSettings = true }
                     )
                     
-                    ProfileMenuItem(
-                        icon: "gamecontroller.fill",
-                        title: "Game Center",
-                        subtitle: GameCenterManager.shared.isAuthenticated ? "متصل" : "غير متصل",
-                        action: { requestGameCenterLogin() }
-                    )
+                    // Game Center menu item removed
                 }
                 .padding(.horizontal, 20)
                 
@@ -248,27 +243,7 @@ struct ProfileView: View {
         }
     }
     
-    private func requestGameCenterLogin() {
-        print("🎮 Game Center login button tapped")
-        
-        if GameCenterManager.shared.isAuthenticated {
-            // Already authenticated, show alert with status
-            let alert = UIAlertController(
-                title: "Game Center",
-                message: "أنت متصل بالفعل بـ Game Center. يمكنك الوصول إلى المتصدرين والإنجازات.",
-                preferredStyle: .alert
-            )
-            alert.addAction(UIAlertAction(title: "حسناً", style: .default))
-            
-            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-               let window = windowScene.windows.first {
-                window.rootViewController?.present(alert, animated: true)
-            }
-        } else {
-            // Not authenticated, try to authenticate
-            GameCenterManager.shared.presentGameCenterLogin()
-        }
-    }
+    // Game Center login function removed
     
     private var memberSinceDate: String {
         let formatter = DateFormatter()

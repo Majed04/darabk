@@ -15,7 +15,6 @@ struct MainTabView: View {
     @StateObject private var achievementManager = AchievementManager()
     @StateObject private var dataManager = DataManager()
     @StateObject private var notificationManager = NotificationManager()
-    @StateObject private var gameCenterManager = GameCenterManager.shared
     
     @State private var selectedTab = 0
     @State private var isInitialized = false
@@ -49,29 +48,6 @@ struct MainTabView: View {
                         }
                         .tag(1)
                     
-                    // Leaderboard Tab
-                    ComingSoonView(
-                        title: "المتصدرين",
-                        description: "ستتمكن قريباً من رؤية المتصدرين والتنافس مع أصدقائك في Game Center",
-                        icon: "trophy.fill"
-                    )
-                    .tabItem {
-                        Image(systemName: "trophy.fill")
-                        Text("المتصدرين")
-                    }
-                    .tag(2)
-                    
-                    // Competition Tab
-                    PhotoChallengeRaceView()
-                        .environmentObject(user)
-                        .environmentObject(healthKitManager)
-                        .environmentObject(gameCenterManager)
-                        .tabItem {
-                            Image(systemName: "flag.filled.and.flag.crossed")
-                            Text("المنافسة")
-                        }
-                        .tag(3)
-                    
                     // Profile Tab
                     ProfileView()
                         .environmentObject(user)
@@ -82,7 +58,7 @@ struct MainTabView: View {
                             Image(systemName: "person.fill")
                             Text("الملف الشخصي")
                         }
-                        .tag(4)
+                        .tag(2)
                 }
                 .accentColor(DesignSystem.Colors.primary)
             } else {

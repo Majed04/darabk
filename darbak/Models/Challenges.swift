@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import GameKit
 
 struct Challenge: Identifiable {
     let id = UUID()
@@ -33,66 +32,6 @@ struct Challenge: Identifiable {
     var fullTitle: String {
         return "صور \(prompt) خلال إنجازك هدف اليوم"
     }
-}
-
-// MARK: - Competition Models
-struct PhotoChallengeRace: Identifiable, Codable {
-    let id = UUID()
-    let challengeId: UUID
-    let player1Id: String
-    let player2Id: String
-    let player1Name: String
-    let player2Name: String
-    let dailyGoal: Int
-    let startDate: Date
-    let endDate: Date
-    let status: RaceStatus
-    let winnerId: String?
-    
-    var isActive: Bool {
-        return status == .active && Date() <= endDate
-    }
-    
-    var timeRemaining: TimeInterval {
-        return max(0, endDate.timeIntervalSince(Date()))
-    }
-}
-
-enum RaceStatus: String, Codable {
-    case active = "active"
-    case completed = "completed"
-    case cancelled = "cancelled"
-}
-
-struct RaceProgress: Codable {
-    let playerId: String
-    let playerName: String
-    let completedPhotos: Int
-    let dailyGoalProgress: Int
-    let lastUpdate: Date
-    let isCompleted: Bool
-    
-    var progressPercentage: Double {
-        return min(1.0, Double(completedPhotos) / Double(4)) // Assuming 4 photos per challenge
-    }
-    
-    var dailyGoalPercentage: Double {
-        return min(1.0, Double(dailyGoalProgress) / Double(10000)) // Assuming 10k daily goal
-    }
-}
-
-struct RaceInvitation: Codable {
-    let raceId: String
-    let challengeId: String
-    let challengerName: String
-    let challengeName: String
-    let dailyGoal: Int
-    let sentDate: Date
-}
-
-struct PersistedRacesData: Codable {
-    let races: [PhotoChallengeRace]
-    let progress: [String: RaceProgress]
 }
 
 class ChallengesData {

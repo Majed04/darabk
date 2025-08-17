@@ -393,7 +393,7 @@ class AchievementManager: ObservableObject {
             latestAchievement = achievements[index]
             showingAchievementAlert = true
 
-            GameCenterManager.shared.unlockAchievement(achievement.title)
+            // Game Center achievement unlocking removed
 
             if case .badge = achievement.type {
                 let badge = Badge(
