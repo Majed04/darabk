@@ -54,9 +54,7 @@ struct TheChallengeView: View {
     var progressValue: Double {
         min(1.0, Double(healthKitManager.currentSteps) / Double(dailyGoal))
     }
-    
-//    let disablePhotoButton = remainingStepsForNextPhoto() <= 0 || challengeProgress.completedPhotos < currentChallenge.totalPhotos
-    
+        
     var body: some View {
         ZStack {
             // Background
@@ -424,7 +422,9 @@ struct TheChallengeView: View {
             challengeProgress.completeChallenge()
             
             // Navigate to post challenge view
-            showingPostChallenge = true
+            if healthKitManager.currentSteps >= dailyGoal {
+                showingPostChallenge = true
+            }
         }
     }
     

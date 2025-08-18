@@ -158,8 +158,7 @@ struct HomeView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 120, height: 120)
-                    .offset(x: 0, y: -50)
-                    .rotationEffect(.degrees(15))
+                    .offset(x: 10, y: -20)
                     .shadow(color: .black.opacity(0.12), radius: 2, x: 0, y: 1)
                     .allowsHitTesting(false)
             }
