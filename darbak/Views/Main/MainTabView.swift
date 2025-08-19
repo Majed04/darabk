@@ -31,8 +31,8 @@ struct MainTabView: View {
                         .environmentObject(dataManager)
                         .environmentObject(notificationManager)
                         .tabItem {
-                            Image(systemName: "house.fill")
-                            Text("الرئيسية")
+                            Image(systemName: "figure.walk")
+                            Text("التحدي")
                         }
                         .tag(0)
                     
