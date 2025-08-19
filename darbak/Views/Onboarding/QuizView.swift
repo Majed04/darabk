@@ -86,7 +86,7 @@ struct QuizView: View {
         case 4: return true // Height
         case 5: return true // Sleeping Hours
         case 6: return true // Step Goal choice
-        case 7: return user.goalSteps > 1000
+        case 7: return user.goalSteps > 100
         case 8: return true // Final View
         default: return false
         }

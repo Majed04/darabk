@@ -284,6 +284,11 @@ struct TheChallengeView: View {
             }
         }
         .navigationBarHidden(true)
+        .onChange(of: healthKitManager.currentSteps) {
+            if challengeProgress.isMaxPhotosReached && healthKitManager.currentSteps >= dailyGoal {
+                showingPostChallenge = true
+            }
+        }
         .onAppear {
             checkCameraPermission()
             // Reset progress if challenge has changed
@@ -421,10 +426,6 @@ struct TheChallengeView: View {
             PolaroidGalleryManager.shared.completeChallengeSession()
             challengeProgress.completeChallenge()
             
-            // Navigate to post challenge view
-            if healthKitManager.currentSteps >= dailyGoal {
-                showingPostChallenge = true
-            }
         }
     }
     
